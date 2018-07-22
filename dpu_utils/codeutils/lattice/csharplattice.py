@@ -1,8 +1,8 @@
 from functools import lru_cache
 from typing import List, Set
 
-from codeutils.lattice.lattice import Lattice
-from utils.dataloading import load_json_gz
+from dpu_utils.codeutils.lattice import Lattice
+from dpu_utils.utils.dataloading import load_json_gz
 
 
 class CSharpLattice(Lattice):

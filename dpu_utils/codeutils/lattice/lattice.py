@@ -3,8 +3,8 @@ from functools import lru_cache
 from itertools import chain
 from typing import Iterable, List, Set, Optional
 
-from utils.dataloading import save_json_gz, load_json_gz
-from utils.vocabulary import Vocabulary
+from dpu_utils.utils.dataloading import save_json_gz, load_json_gz
+from dpu_utilsutils.vocabulary import Vocabulary
 
 
 class Lattice:
