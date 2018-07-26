@@ -4,10 +4,10 @@ DPU Utilities
 This contains a set of utilities used across projects.
 
 Generic Utilities:
-* `dpu_utils.utils.RichPath` a convinient way of using both paths and Azure paths in your code.
+* `dpu_utils.utils.RichPath` a convenient way of using both paths and Azure paths in your code.
 * `dpu_utils.utils.Vocabulary` a str to int vocabulary for machine learning models
 * `dpu_utils.utils.*Iterator` iterator wrappers that can parallelize their iteration in other threads/processes.
-* `dpu_utils.utils.{load,save}_json_gz` convinience methods for loading .json.gz from the filesystem.
+* `dpu_utils.utils.{load,save}_json_gz` convenience methods for loading .json.gz from the filesystem.
 
 TensorFlow Utilities:
 * `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
