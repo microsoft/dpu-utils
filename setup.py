@@ -8,6 +8,6 @@ setup(name='dpu_utils',
       author_email='miallama@microsoft.com',
       packages=['dpu_utils'],
       install_requires=[
-          'azure', 'numpy'
+          'azure-storage', 'numpy'
       ],
       zip_safe=False)
