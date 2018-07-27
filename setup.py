@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dpu_utils',
-      version='0.1',
+      version='0.1.1',
       description='Python utilities used by Deep Program Understanding',
       url='https://deepproceduralintelligence.visualstudio.com/dpu-utils/',
       author='Deep Program Understanding',
