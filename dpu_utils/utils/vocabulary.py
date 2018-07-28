@@ -1,13 +1,12 @@
 from collections import Counter
-from typing import Iterable, Dict, Sized, List, FrozenSet, Union, Optional
+from typing import Iterable, Dict, Sized, List, FrozenSet, Union
 
 import numpy as np
 
 
 class Vocabulary(Sized):
     """
-    A simple feature dictionary that converts features (ids) to
-    their textual representation and vice-versa.
+    A simple vocabulary that maps strings to unique ids (and back).
     """
 
     def __init__(self, add_unk: bool=True) -> None:
@@ -74,17 +73,17 @@ class Vocabulary(Sized):
         return '%UNK%'
 
     @staticmethod
-    def create_feature_dictionary(tokens: Union[Iterable[str], Counter], max_size: int,
-                                  count_threshold: int=5, add_unk: bool=True) -> 'Vocabulary':
+    def create_vocabulary(tokens: Union[Iterable[str], Counter], max_size: int,
+                          count_threshold: int=5, add_unk: bool=True) -> 'Vocabulary':
         if type(tokens) is Counter:
             token_counter = tokens
         else:
             token_counter = Counter(tokens)
-        feature_dict = Vocabulary(add_unk=add_unk)
-        feature_dict.__batch_add_from_counter(token_counter, count_threshold, max_size - (1 if add_unk else 0))
-        return feature_dict
+        vocab = Vocabulary(add_unk=add_unk)
+        vocab.__batch_add_from_counter(token_counter, count_threshold, max_size - (1 if add_unk else 0))
+        return vocab
 
-    def update_feature_dictionary(self, token_counter: Counter, max_size: int, count_threshold: int=5):
+    def update(self, token_counter: Counter, max_size: int, count_threshold: int=5):
         assert len(self) < max_size, 'Dictionary is already larger than max_size.'
         self.__batch_add_from_counter(token_counter, count_threshold=count_threshold, max_size=max_size)
 
