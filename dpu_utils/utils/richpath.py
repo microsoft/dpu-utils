@@ -91,7 +91,7 @@ class RichPath(ABC):
         pass
 
     @abstractmethod
-    def save_as_compressed_file(self, data: object) -> None:
+    def save_as_compressed_file(self, data: Any) -> None:
         pass
 
     def read_as_text(self) -> str:
@@ -168,7 +168,7 @@ class LocalPath(RichPath):
         with open(filename, 'rb') as f:
             return binascii.hexlify(f.read(2)) == b'1f8b'
 
-    def save_as_compressed_file(self, data: object) -> None:
+    def save_as_compressed_file(self, data: Any) -> None:
         if self.path.endswith('.json.gz'):
             writer = codecs.getwriter('utf-8')
             with gzip.GzipFile(self.path, 'wb') as outfile:
@@ -259,7 +259,7 @@ class AzurePath(RichPath):
         cached_file_path = self.__cache_file_locally()
         return cached_file_path.read_as_pickle()
 
-    def save_as_compressed_file(self, data: object):
+    def save_as_compressed_file(self, data: Any):
         # TODO: Python does not have a built-in "compress stream" functionality in its standard lib
         # Thus, we just write out to a file and upload, but of course, this should be better...
         if self.path.endswith('.json.gz'):
