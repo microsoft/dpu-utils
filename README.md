@@ -13,6 +13,12 @@ Generic Utilities:
 
 TensorFlow Utilities:
 * `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
+* `dpu_utils.tfutils.unsorted_segment_logsumexp`
+* `dpu_utils.tfutils.unsorted_segment_log_softmax`
+
+
+TensorFlow Models:
+* `dpu_utils.tfmodels.SparseGGNN` a sparse GGNN implementation.
 
 Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case
