@@ -14,7 +14,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import total_ordering
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
 
@@ -111,8 +111,11 @@ class RichPath(ABC):
             return self.read_as_pickle()
         raise ValueError('File suffix must be .json, .json.gz, .pkl or .pkl.gz: %s' % self.path)
 
-    @abstractmethod
     def get_filtered_files_in_dir(self, file_pattern: str) -> List['RichPath']:
+        return list(self.iterate_filtered_files_in_dir(file_pattern))
+
+    @abstractmethod
+    def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['RichPath']:
         pass
 
     @abstractmethod
@@ -179,9 +182,9 @@ class LocalPath(RichPath):
         else:
             raise ValueError('File suffix must be .json.gz or .pkl.gz: %s' % self.path)
 
-    def get_filtered_files_in_dir(self, file_pattern: str) -> List['LocalPath']:
-        return [LocalPath(path)
-                for path in glob.glob(os.path.join(self.path, file_pattern))]
+    def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['LocalPath']:
+        yield from (LocalPath(path)
+                    for path in glob.iglob(os.path.join(self.path, file_pattern)))
 
     def join(self, filename: str) -> 'LocalPath':
         return LocalPath(os.path.join(self.path, filename))
@@ -274,14 +277,14 @@ class AzurePath(RichPath):
         self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_temp_file.path)
         os.unlink(local_temp_file.path)
 
-    def get_filtered_files_in_dir(self, file_pattern: str) -> List['AzurePath']:
+    def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
-        return [AzurePath(blob.name,
+        yield from (AzurePath(blob.name,
                           azure_container_name=self.__container_name,
                           azure_blob_service=self.__blob_service,
                           cache_location=self.__cache_location)
                 for blob in self.__blob_service.list_blobs(self.__container_name, self.path)
-                if fnmatch.fnmatch(blob.name, full_pattern)]
+                if fnmatch.fnmatch(blob.name, full_pattern))
 
     def join(self, filename: str) -> 'AzurePath':
         return AzurePath(os.path.join(self.path, filename),
