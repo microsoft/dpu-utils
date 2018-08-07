@@ -15,14 +15,19 @@ TensorFlow Utilities:
 * `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
 * `dpu_utils.tfutils.unsorted_segment_logsumexp`
 * `dpu_utils.tfutils.unsorted_segment_log_softmax`
+* `dpu_utils.tfutils.TFVariableSaver` save TF variables in an object that can be pickled.
+
+General Machine Learning Utilities:
+* `dpu_utils.mlutils.CharTensorizer` for character-level tensorization.
 
 
 TensorFlow Models:
 * `dpu_utils.tfmodels.SparseGGNN` a sparse GGNN implementation.
 
 Code-related Utilities
-* `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case
-* `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python
+* `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case.
+* `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
+* `dpu_utils.codeutils.ChunkWriter` that helps writing chunks to the output.
 
 
 Use
