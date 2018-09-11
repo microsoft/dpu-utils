@@ -4,7 +4,7 @@ import pdb
 from typing import Callable
 
 
-def run_and_debug(func: Callable[[], None], enable_debugging: bool):
+def run_and_debug(func: Callable[[], None], enable_debugging: bool)-> None:
     try:
         func()
     except:
