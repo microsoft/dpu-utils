@@ -20,6 +20,7 @@ class SparseGGNN:
     def __init__(self, params: Dict[str, Any]):
         self.params = params
         self.num_edge_types = self.params['n_edge_types']
+        assert self.num_edge_types > 0, 'GNN should have at least one edge type'
         h_dim = self.params['hidden_size']
 
         edge_feature_sizes = self.params.get('edge_features_size', {})  # type: Dict[int, int]
