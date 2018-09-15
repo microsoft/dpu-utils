@@ -10,9 +10,11 @@ class Vocabulary(Sized):
     A simple vocabulary that maps strings to unique ids (and back).
     """
 
-    def __init__(self, add_unk: bool=True) -> None:
+    def __init__(self, add_unk: bool=True, add_pad: bool=False) -> None:
         self.token_to_id = {}  # type: Dict[str, int]
         self.id_to_token = []  # type: List[str]
+        if add_pad:
+            self.add_or_get_id(self.get_pad())
         if add_unk:
             self.add_or_get_id(self.get_unk())
 
@@ -21,7 +23,7 @@ class Vocabulary(Sized):
         This would be __eq__, except that Python 3 insists that __hash__ is defined if __eq__ is
         defined, and we can't define __hash__ because the object is mutable.
         """
-        if type(other) != Vocabulary:
+        if not isinstance(other, Vocabulary):
             return False
         return self.id_to_token == other.id_to_token
 
@@ -74,14 +76,19 @@ class Vocabulary(Sized):
         return '%UNK%'
 
     @staticmethod
+    def get_pad() -> str:
+        return '%PAD%'
+
+    @staticmethod
     def create_vocabulary(tokens: Union[Iterable[str], Counter], max_size: int,
-                          count_threshold: int=5, add_unk: bool=True) -> 'Vocabulary':
+                          count_threshold: int=5, add_unk: bool=True, add_pad: bool=False) -> 'Vocabulary':
         if type(tokens) is Counter:
             token_counter = tokens
         else:
             token_counter = Counter(tokens)
-        vocab = Vocabulary(add_unk=add_unk)
-        vocab.__batch_add_from_counter(token_counter, count_threshold, max_size - (1 if add_unk else 0))
+        vocab = Vocabulary(add_unk=add_unk, add_pad=add_pad)
+        num_base_tokens = (1 if add_unk else 0) + (1 if add_pad else 0)
+        vocab.__batch_add_from_counter(token_counter, count_threshold, max_size - num_base_tokens)
         return vocab
 
     def update(self, token_counter: Counter, max_size: int, count_threshold: int=5):
