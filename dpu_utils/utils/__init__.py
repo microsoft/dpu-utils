@@ -1,6 +1,5 @@
 from .richpath import RichPath, AzurePath, LocalPath
 from .iterators import BufferedIterator, DoubleBufferedIterator, MultiWorkerCallableIterator
-from dpu_utils.mlutils.vocabulary import Vocabulary
 from .dataloading import load_json_gz, save_json_gz, load_jsonl_gz, save_jsonl_gz
 from .gitlog import git_tag_run
 from .debughelper import run_and_debug
