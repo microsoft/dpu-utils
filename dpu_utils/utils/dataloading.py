@@ -22,7 +22,7 @@ def load_jsonl_gz(filename: str) -> Iterator[Any]:
         for line in reader(f):
             yield json.loads(line, object_pairs_hook=OrderedDict)
 
-def save_jsonl_gz(filename:str, data: Iterable[Any])-> None:
+def save_jsonl_gz(data: Iterable[Any], filename: str)-> None:
     with gzip.GzipFile(filename, 'wb') as out_file:
         writer = codecs.getwriter('utf-8')
         for element in data:
