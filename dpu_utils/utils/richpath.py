@@ -20,6 +20,8 @@ from azure.storage.blob import BlockBlobService
 
 AZURE_PATH_PREFIX = "azure://"
 
+__all__ = ['RichPath', 'LocalPath', 'AzurePath']
+
 @total_ordering
 class RichPath(ABC):
     def __init__(self, path: str):

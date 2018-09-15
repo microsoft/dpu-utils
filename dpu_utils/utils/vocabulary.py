@@ -3,6 +3,7 @@ from typing import Iterable, Dict, Sized, List, FrozenSet, Union
 
 import numpy as np
 
+__all__ = ['Vocabulary']
 
 class Vocabulary(Sized):
     """

@@ -8,6 +8,7 @@ from typing import TypeVar, Iterable, Iterator, List, Callable
 
 T = TypeVar('T')
 
+__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator']
 
 class ThreadedIterator(Iterable[T]):
     """An iterator object that computes its elements in a single parallel thread to be ready to be consumed.

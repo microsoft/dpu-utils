@@ -1,1 +1,1 @@
-from dpu_utils.tfmodels.sparsegnn import SparseGGNN
+from .sparsegnn import SparseGGNN
