@@ -2,6 +2,8 @@ from typing import Optional
 
 import numpy as np
 
+__all__ = ['CharTensorizer']
+
 class CharTensorizer:
     """Tensorize strings into characters"""
 

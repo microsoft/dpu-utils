@@ -1,1 +1,3 @@
-from dpu_utils.mlutils.chartensorizer import CharTensorizer
+from .chartensorizer import CharTensorizer
+
+__all__ = ['CharTensorizer']

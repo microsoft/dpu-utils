@@ -1,2 +1,2 @@
-from dpu_utils.codeutils.identifiersplitting import split_identifier_into_parts
-from dpu_utils.codeutils.lattice import CSharpLattice, Lattice, LatticeVocabulary
+from .identifiersplitting import split_identifier_into_parts
+from .lattice import CSharpLattice, Lattice, LatticeVocabulary

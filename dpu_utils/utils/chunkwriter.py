@@ -1,11 +1,12 @@
-from contextlib import AbstractContextManager
 from typing import Any, List, Iterable, TypeVar, Generic
 
 from dpu_utils.utils import RichPath
 
 T = TypeVar('T')
 
-class ChunkWriter(AbstractContextManager, Generic[T]):
+__all__ = ['ChunkWriter']
+
+class ChunkWriter(Generic[T]):
     """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz or .json.gz
     the appropriate format will be used for the chunks."""
     def __init__(self, out_folder: RichPath, file_prefix: str, max_chunk_size: int, file_suffix: str):
@@ -38,6 +39,9 @@ class ChunkWriter(AbstractContextManager, Generic[T]):
         outfile.save_as_compressed_file(self.__current_chunk)
         self.__current_chunk = []
         self.__num_files_written += 1
+
+    def __enter__(self):
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
