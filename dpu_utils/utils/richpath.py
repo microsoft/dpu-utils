@@ -18,6 +18,8 @@ from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
 
+from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
+
 AZURE_PATH_PREFIX = "azure://"
 
 __all__ = ['RichPath', 'LocalPath', 'AzurePath']
@@ -102,6 +104,10 @@ class RichPath(ABC):
     def read_as_json(self) -> Any:
         return json.loads(self.read_as_text(), object_pairs_hook=OrderedDict)
 
+    def read_as_jsonl(self) -> Iterable[Any]:
+        for line in self.read_as_text().splitlines():
+            yield json.loads(line, object_pairs_hook=OrderedDict)
+
     @abstractmethod
     def read_as_pickle(self) -> Any:
         pass
@@ -109,6 +115,8 @@ class RichPath(ABC):
     def read_by_file_suffix(self) -> Any:
         if self.path.endswith('.json.gz') or self.path.endswith('.json'):
             return self.read_as_json()
+        elif self.path.endswith('.jsonl.gz') or self.path.endswith('.jsonl'):
+            return self.read_as_jsonl()
         if self.path.endswith('.pkl.gz') or self.path.endswith('.pkl'):
             return self.read_as_pickle()
         raise ValueError('File suffix must be .json, .json.gz, .pkl or .pkl.gz: %s' % self.path)
@@ -175,9 +183,9 @@ class LocalPath(RichPath):
 
     def save_as_compressed_file(self, data: Any) -> None:
         if self.path.endswith('.json.gz'):
-            writer = codecs.getwriter('utf-8')
-            with gzip.GzipFile(self.path, 'wb') as outfile:
-                json.dump(data, writer(outfile))
+            save_json_gz(data, self.path)
+        elif self.path.endswith('.jsonl.gz'):
+            save_jsonl_gz(data, self.path)
         elif self.path.endswith('.pkl.gz'):
             with gzip.GzipFile(self.path, 'wb') as outfile:
                 pickle.dump(data, outfile)
@@ -269,10 +277,12 @@ class AzurePath(RichPath):
         # Thus, we just write out to a file and upload, but of course, this should be better...
         if self.path.endswith('.json.gz'):
             f = tempfile.NamedTemporaryFile(suffix='.json.gz', delete=False)
+        elif self.path.endswith('.jsonl.gz'):
+            f = tempfile.NamedTemporaryFile(suffix='.jsonl.gz', delete=False)
         elif self.path.endswith('.pkl.gz'):
             f = tempfile.NamedTemporaryFile(suffix='.pkl.gz', delete=False)
         else:
-            raise ValueError('File suffix must be .json.gz or .pkl.gz: %s' % self.path)
+            raise ValueError('File suffix must be .json.gz, .jsonl.gz or .pkl.gz: %s' % self.path)
         local_temp_file = LocalPath(f.name)
         f.close()
         local_temp_file.save_as_compressed_file(data)

@@ -1,4 +1,4 @@
-from typing import Any, List, Iterable, TypeVar, Generic
+from typing import Any, List, Iterable, TypeVar, Generic, Union
 
 from dpu_utils.utils import RichPath
 
@@ -9,8 +9,10 @@ __all__ = ['ChunkWriter']
 class ChunkWriter(Generic[T]):
     """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz or .json.gz
     the appropriate format will be used for the chunks."""
-    def __init__(self, out_folder: RichPath, file_prefix: str, max_chunk_size: int, file_suffix: str):
+    def __init__(self, out_folder: Union[RichPath, str], file_prefix: str, max_chunk_size: int, file_suffix: str):
         self.__current_chunk = []  # type: List[T]
+        if isinstance(out_folder, str):
+            out_folder = RichPath.create(out_folder)
         self.__out_folder = out_folder
         self.__out_folder.make_as_dir()
         self.__file_prefix = file_prefix
