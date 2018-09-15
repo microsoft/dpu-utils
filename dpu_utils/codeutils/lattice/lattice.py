@@ -4,7 +4,7 @@ from itertools import chain
 from typing import Iterable, List, Set, Optional
 
 from dpu_utils.utils.dataloading import save_json_gz, load_json_gz
-from dpu_utilsutils.vocabulary import Vocabulary
+from dpu_utils.mlutils import Vocabulary
 
 
 class Lattice:
@@ -124,6 +124,12 @@ class LatticeVocabulary(Vocabulary):
 
     @staticmethod
     def get_feature_dictionary_for(tokens: Iterable[str], lattice: Lattice,
+                                   count_threshold: int = 5) -> 'LatticeVocabulary':
+        """Deprecated: Use `get_vocabulary_for` instead."""
+        return LatticeVocabulary.get_vocabulary_for(tokens, lattice, count_threshold)
+
+    @staticmethod
+    def get_vocabulary_for(tokens: Iterable[str], lattice: Lattice,
                                    count_threshold: int = 5) -> 'LatticeVocabulary':
         token_counter = Counter(tokens)
         for token, count in list(token_counter.items()):

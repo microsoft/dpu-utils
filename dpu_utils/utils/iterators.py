@@ -12,7 +12,7 @@ __all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator'
 
 class ThreadedIterator(Iterable[T]):
     """An iterator object that computes its elements in a single parallel thread to be ready to be consumed.
-    The iterator should *not* return None"""
+    The iterator should *not* return `None`. Elements of the original iterable will be shuffled arbitrarily."""
 
     def __init__(self, original_iterator: Iterator[T], max_queue_size: int=2, enabled: bool=True):
         self.__is_enabled = enabled

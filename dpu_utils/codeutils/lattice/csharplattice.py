@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import List, Set
 
-from dpu_utils.codeutils.lattice import Lattice
+from .lattice import Lattice
 from dpu_utils.utils.dataloading import load_json_gz
 
 

@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Iterable, Dict, Sized, List, FrozenSet, Union
+from typing import Iterable, Dict, Sized, List, FrozenSet, Union, Optional
 
 import numpy as np
 
@@ -50,6 +50,17 @@ class Vocabulary(Sized):
             return this_id
         else:
             return self.token_to_id[self.get_unk()]
+
+    def get_id_or_unk_multiple(self, tokens: List[str], pad_to_size: Optional[int]=None, padding_element: int=0) -> List[int]:
+        if pad_to_size is not None:
+            tokens = tokens[:pad_to_size]
+
+        ids = [self.get_id_or_unk(t) for t in tokens]
+
+        if pad_to_size is not None and len(ids) != pad_to_size:
+            ids += [padding_element] * (pad_to_size - len(ids))
+
+        return ids
 
     def get_name_for_id(self, token_id: int) -> str:
         return self.id_to_token[token_id]
