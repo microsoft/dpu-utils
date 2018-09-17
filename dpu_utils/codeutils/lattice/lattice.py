@@ -1,7 +1,7 @@
 from collections import Counter
 from functools import lru_cache
 from itertools import chain
-from typing import Iterable, List, Set, Optional
+from typing import Iterable, List, Set, Optional, Union
 
 from dpu_utils.utils.dataloading import save_json_gz, load_json_gz
 from dpu_utils.mlutils import Vocabulary
@@ -129,9 +129,12 @@ class LatticeVocabulary(Vocabulary):
         return LatticeVocabulary.get_vocabulary_for(tokens, lattice, count_threshold)
 
     @staticmethod
-    def get_vocabulary_for(tokens: Iterable[str], lattice: Lattice,
-                                   count_threshold: int = 5) -> 'LatticeVocabulary':
-        token_counter = Counter(tokens)
+    def get_vocabulary_for(tokens: Union[Iterable[str], Counter], lattice: Lattice,
+                           count_threshold: int = 5) -> 'LatticeVocabulary':
+        if type(tokens) is Counter:
+            token_counter = tokens
+        else:
+            token_counter = Counter(tokens)
         for token, count in list(token_counter.items()):
             if token.startswith('type:'):
                 type_name = token[len('type:'):]
