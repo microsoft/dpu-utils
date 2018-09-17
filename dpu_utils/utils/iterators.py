@@ -10,39 +10,43 @@ T = TypeVar('T')
 
 __all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator']
 
-class ThreadedIterator(Iterable[T]):
+
+class ThreadedIterator(Iterator[T]):
     """An iterator object that computes its elements in a single parallel thread to be ready to be consumed.
     The iterator should *not* return `None`. Elements of the original iterable will be shuffled arbitrarily."""
-
     def __init__(self, original_iterator: Iterator[T], max_queue_size: int=2, enabled: bool=True):
         self.__is_enabled = enabled
         if enabled:
             self.__queue = queue.Queue(maxsize=max_queue_size)
-            self.__thread = threading.Thread(target=lambda: self.__worker(original_iterator))
+            self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator))
             self.__thread.start()
         else:
             self.__original_iterator = original_iterator
 
-    def __worker(self, original_iterator: Iterator[T])-> None:
+    @staticmethod
+    def __worker(queue: queue.Queue, original_iterator: Iterator[T])-> None:
         try:
             for element in original_iterator:
-                assert element is not None, 'By convention, iterator elements much not be None'
-                self.__queue.put(element, block=True)
-            self.__queue.put(None, block=True)
+                assert element is not None, 'By convention, Iterables wrapped in ThreadedIterator may not contain None.'
+                queue.put(element, block=True)
+            queue.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            self.__queue.put((e, tb), block=True)
+            queue.put((e, tb), block=True)
+
+    def __next__(self) -> T:
+        next_element = self.__queue.get(block=True)
+        if next_element is None:
+            self.__thread.join()
+            self.__queue.put(None)  # Make sure that we remember that we are done if we are called once more...
+            raise StopIteration
+        if isinstance(next_element, tuple) and isinstance(next_element[0], Exception):
+            raise next_element[0].with_traceback(next_element[1])
+        return next_element
 
     def __iter__(self):
         if self.__is_enabled:
-            next_element = self.__queue.get(block=True)
-            while next_element is not None:
-                if isinstance(next_element, tuple) and isinstance(next_element[0], Exception):
-                    raise next_element[0].with_traceback(next_element[1])
-                yield next_element
-                next_element = self.__queue.get(block=True)
-            self.__thread.join()
-
+            return self
         else:
             yield from self.__original_iterator
 
