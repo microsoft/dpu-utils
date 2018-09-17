@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.1.7',
+      version='0.1.8',
       description='Python utilities used by Deep Procedural Intelligence',
       url='https://deepproceduralintelligence.visualstudio.com/dpu-utils/',
       author='Deep Procedural Intelligence',

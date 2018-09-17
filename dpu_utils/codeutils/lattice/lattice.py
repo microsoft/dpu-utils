@@ -130,7 +130,7 @@ class LatticeVocabulary(Vocabulary):
 
     @staticmethod
     def get_vocabulary_for(tokens: Union[Iterable[str], Counter], lattice: Lattice,
-                           count_threshold: int = 5) -> 'LatticeVocabulary':
+                           count_threshold: int = 5, max_size: int=100000) -> 'LatticeVocabulary':
         if type(tokens) is Counter:
             token_counter = tokens
         else:
@@ -142,7 +142,7 @@ class LatticeVocabulary(Vocabulary):
                     token_counter['type:' + t] += count
 
         feature_dict = LatticeVocabulary(lattice)
-        for token, count in token_counter.items():
+        for token, count in token_counter.most_common(max_size):
             if count >= count_threshold:
                 feature_dict.add_or_get_id(token)
         return feature_dict
