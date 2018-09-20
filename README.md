@@ -1,5 +1,5 @@
 DPU Utilities
-====
+=============
 
 This contains a set of utilities used across projects.
 
@@ -9,6 +9,7 @@ Generic Utilities:
 * `dpu_utils.utils.{load,save}_json[l]_gz` convenience methods for loading .json[l].gz from the filesystem.
 * `dpu_utils.utils.git_tag_run` that tags the current working directory git the state of the code.
 * `dpu_utils.utils.run_and_debug` when an exception happens, start a debug session. Usually a wrapper of `__main__`.
+* `dpu_utils.utils.ChunkWriter` that helps writing chunks to the output.
 
 TensorFlow Utilities:
 * `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
@@ -20,18 +21,17 @@ General Machine Learning Utilities:
 * `dpu_utils.mlutils.CharTensorizer` for character-level tensorization.
 * `dpu_utils.mlutils.Vocabulary` a str to int vocabulary for machine learning models
 
-
 TensorFlow Models:
 * `dpu_utils.tfmodels.SparseGGNN` a sparse GGNN implementation.
+* `dpu_utils.tfmodels.AsyncGGNN` an asynchronous GGNN implementation.
 
 Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
-* `dpu_utils.codeutils.ChunkWriter` that helps writing chunks to the output.
 
 
 Use
-=======
+===
 First install `dpu-utils` in your environment as
 
 ```
@@ -43,11 +43,11 @@ If you don't have access, it may be that (a) you are not in CorpNet (b) your IP 
 
 
 Deploying updates to packages to private PyPi
-=======
+=============================================
 Once a new version is available:
 * Update the version number in `setup.py`
 * Add the new version in `packagesToUpload.txt`
-* Commit and run the Build in VSTS.
-* Download the artifact `.zip` and unzip locally.
-* Upload it to the `dpucode/$web` container.
+* Commit and push to VSTS; changes to to `setup.py` will automatically trigger a build.
+* Download the built artifact `.zip` and unzip locally.
+* Upload it to the `dpucode/$web` container (updated: the `tar` with the code, a JSON file with the version info, and two `index.html`)
 
