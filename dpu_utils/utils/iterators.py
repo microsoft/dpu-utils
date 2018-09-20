@@ -55,7 +55,7 @@ class MultiWorkerCallableIterator(Iterable):
     """An iterator that computes its elements in parallel workers to be ready to be consumed. The iterator should
     have at least one element. The order of the callables is shuffled arbitrarily."""
 
-    def __init__(self, argument_iterator: Iterator[List], worker_callable: Callable, max_queue_size: int=1, num_workers: int = 5, use_threads: bool=True):
+    def __init__(self, argument_iterator: Iterator[Iterable], worker_callable: Callable, max_queue_size: int=1, num_workers: int = 5, use_threads: bool=True):
         self.__in_queue = queue.Queue() if use_threads else multiprocessing.Queue()
         self.__num_elements = 0
         for callable_args in argument_iterator:
