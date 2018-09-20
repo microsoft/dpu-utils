@@ -270,7 +270,15 @@ class AzurePath(RichPath):
 
         # This makes sure that we do not use a memory stream to store the temporary data:
         cached_file_path = self.__cache_file_locally()
-        return cached_file_path.read_as_pickle()
+        # We sometimes have a corrupted cache (if the process was killed while writing)
+        try:
+            data = cached_file_path.read_as_pickle()
+        except EOFError:
+            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            os.unlink(cached_file_path.path)
+            cached_file_path = self.__cache_file_locally()
+            data = cached_file_path.read_as_pickle()
+        return data
 
     def save_as_compressed_file(self, data: Any):
         # TODO: Python does not have a built-in "compress stream" functionality in its standard lib
