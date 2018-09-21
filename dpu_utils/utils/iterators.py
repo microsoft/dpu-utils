@@ -68,18 +68,28 @@ class MultiWorkerCallableIterator(Iterable):
 
     def __worker(self, worker_callable):
         try:
-            while True:
-                next_element = self.__in_queue.get()
-                self.__out_queue.put(worker_callable(*next_element))
+            while not self.__in_queue.empty():
+                next_element = self.__in_queue.get(block=False)
+                print('Read element from in queue %s' % next_element)
+                result = worker_callable(*next_element)
+                print('Computed result')
+                self.__out_queue.put(result)
+                print('Stored element in out queue')
         except queue.Empty:
             pass
+        except Exception as e:
+            _, __, tb = sys.exc_info()
+            self.__out_queue.put((e, tb), block=True)
 
     def __iter__(self):
         for _ in range(self.__num_elements):
-            yield self.__out_queue.get(block=True)
+            next_element = self.__out_queue.get(block=True)
+            if isinstance(next_element, tuple) and isinstance(next_element[0], Exception):
+                raise next_element[0].with_traceback(next_element[1])
+            yield next_element 
 
         for worker in self.__threads:
-            worker.terminate()
+            worker.join()
 
 
 class BufferedIterator(Iterable[T]):
