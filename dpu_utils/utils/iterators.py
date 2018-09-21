@@ -70,11 +70,8 @@ class MultiWorkerCallableIterator(Iterable):
         try:
             while not self.__in_queue.empty():
                 next_element = self.__in_queue.get(block=False)
-                print('Read element from in queue %s' % next_element)
                 result = worker_callable(*next_element)
-                print('Computed result')
                 self.__out_queue.put(result)
-                print('Stored element in out queue')
         except queue.Empty:
             pass
         except Exception as e:
@@ -86,7 +83,7 @@ class MultiWorkerCallableIterator(Iterable):
             next_element = self.__out_queue.get(block=True)
             if isinstance(next_element, tuple) and isinstance(next_element[0], Exception):
                 raise next_element[0].with_traceback(next_element[1])
-            yield next_element 
+            yield next_element
 
         for worker in self.__threads:
             worker.join()
