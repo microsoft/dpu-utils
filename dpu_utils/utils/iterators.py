@@ -48,7 +48,7 @@ class ThreadedIterator(Iterator[T]):
         if self.__is_enabled:
             return self
         else:
-            yield from self.__original_iterator
+            return self.__original_iterator
 
 
 class MultiWorkerCallableIterator(Iterable):
