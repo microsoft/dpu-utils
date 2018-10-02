@@ -245,7 +245,7 @@ class AzurePath(RichPath):
         cached_file_path = self.__cache_file_locally()
         return cached_file_path.read_as_binary()
 
-    def __cache_file_locally(self) -> LocalPath:
+    def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
         cached_file_path = os.path.join(self.__cache_location, self.__container_name, self.path)
         if not os.path.isfile(cached_file_path):
             try:
@@ -254,7 +254,10 @@ class AzurePath(RichPath):
             except Exception as e:
                 if os.path.exists(cached_file_path):
                     os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
-                raise e
+                if num_retries == 0:
+                    raise e
+                else:
+                    self.__cache_file_locally(num_retries-1)
         return LocalPath(cached_file_path)
 
     def __read_as_binary(self) -> bytes:
