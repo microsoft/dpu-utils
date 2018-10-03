@@ -49,6 +49,7 @@ class RichPath(ABC):
             sas_token = account_info.get('sas_token')
             account_key = account_info.get('account_key')
             if sas_token is not None:
+                assert not sas_token.startswith('?'), 'SAS tokens should not start with "?". Just delete it.'  #  https://github.com/Azure/azure-storage-python/issues/301
                 blob_service = BlockBlobService(account_name=account_name,
                                                 sas_token=sas_token)
             elif account_key is not None:
