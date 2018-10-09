@@ -141,6 +141,10 @@ class RichPath(ABC):
     def get_size(self) -> int:
         pass
 
+    @abstractmethod
+    def exists(self) -> bool:
+        pass
+
 
 class LocalPath(RichPath):
     def __init__(self, path: str):
@@ -205,6 +209,9 @@ class LocalPath(RichPath):
 
     def get_size(self) -> int:
         return os.stat(self.path).st_size
+
+    def exists(self) -> bool:
+        return os.path.exists(self.path)
 
 class AzurePath(RichPath):
     def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
@@ -327,3 +334,6 @@ class AzurePath(RichPath):
     def get_size(self) -> int:
         file_properties = self.__blob_service.get_blob_properties(self.__container_name, self.path)
         return file_properties.properties.content_length
+
+    def exists(self) -> bool:
+        return self.__blob_service.exists(self.__container_name, self.path)
