@@ -1,7 +1,6 @@
-DPU Utilities
-=============
+# DPU Utilities
 
-This contains a set of utilities used across projects.
+This contains a set of utilities used across projects of the [DPU team](https://www.microsoft.com/en-us/research/project/program/).
 
 Generic Utilities:
 * `dpu_utils.utils.RichPath` a convenient way of using both paths and Azure paths in your code.
@@ -29,25 +28,16 @@ Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
 
+# Contributing
 
-Use
-===
-First install `dpu-utils` in your environment as
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
-```
-pip install --extra-index-url https://dpucode.z6.web.core.windows.net/simple dpu-utils
-```
-Then use the code.
+When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
 
-If you don't have access, it may be that (a) you are not in CorpNet (b) your IP is not whitelisted. Contact DPU for this.
-
-
-Deploying updates to packages to private PyPi
-=============================================
-Once a new version is available:
-* Update the version number in `setup.py`
-* Add the new version in `packagesToUpload.txt`
-* Commit and push to VSTS; changes to to `setup.py` will automatically trigger a build.
-* Download the built artifact `.zip` and unzip locally.
-* Upload it to the `dpucode/$web` container (updated: the `tar` with the code, a JSON file with the version info, and two `index.html`)
-
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
