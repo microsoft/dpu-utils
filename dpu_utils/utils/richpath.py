@@ -7,7 +7,7 @@ import fnmatch
 import zlib
 import io
 import pickle
-import codecs
+import logging
 import tempfile
 import re
 
@@ -17,6 +17,7 @@ from functools import total_ordering
 from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
+from azure.common import AzureHttpError
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
 
@@ -57,6 +58,10 @@ class RichPath(ABC):
                                                 account_key=account_key)
             else:
                 raise Exception("Access to Azure storage account '%s' requires either account_key or sas_token!" % (account_name,))
+
+            # ERROR is too verbose, in particular when downloading based on etags an error is emitted when blob
+            # download is aborted.
+            logging.getLogger('azure.storage').setLevel(logging.CRITICAL)
 
             # Replace environment variables in the cache location
             cache_location = account_info.get('cache_location')
@@ -263,14 +268,22 @@ class AzurePath(RichPath):
 
         try:
             os.makedirs(os.path.dirname(cached_file_path), exist_ok=True)
-            blob = self.__blob_service.get_blob_to_path(self.__container_name, self.path, cached_file_path,
+            # The next invocation to the blob service may fail and delete the current file. Store it elsewhere
+            new_filepath = cached_file_path+'.new'
+
+            blob = self.__blob_service.get_blob_to_path(self.__container_name, self.path, new_filepath,
                                                         if_none_match=old_etag)
-            if blob.properties.etag != old_etag:
-                with open(cached_file_path_etag, 'w') as f:
-                    f.write(blob.properties.etag)
+            os.rename(new_filepath, cached_file_path)
+            with open(cached_file_path_etag, 'w') as f:
+                f.write(blob.properties.etag)
+        except AzureHttpError as aze:
+            os.remove(new_filepath)
+            if aze.error_code != 'ConditionNotMet':
+                raise aze
         except Exception as e:
             if os.path.exists(cached_file_path):
                 os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
+                os.remove(cached_file_path_etag)
             if num_retries == 0:
                 raise e
             else:
