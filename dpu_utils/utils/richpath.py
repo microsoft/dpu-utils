@@ -255,17 +255,26 @@ class AzurePath(RichPath):
 
     def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
         cached_file_path = os.path.join(self.__cache_location, self.__container_name, self.path)
-        if not os.path.isfile(cached_file_path):
-            try:
-                os.makedirs(os.path.dirname(cached_file_path), exist_ok=True)
-                self.__blob_service.get_blob_to_path(self.__container_name, self.path, cached_file_path)
-            except Exception as e:
-                if os.path.exists(cached_file_path):
-                    os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
-                if num_retries == 0:
-                    raise e
-                else:
-                    self.__cache_file_locally(num_retries-1)
+        cached_file_path_etag = cached_file_path+'.etag'  # Create an .etag file containing the object etag
+        old_etag = None
+        if os.path.exists(cached_file_path_etag):
+            with open(cached_file_path_etag) as f:
+                old_etag = f.read()
+
+        try:
+            os.makedirs(os.path.dirname(cached_file_path), exist_ok=True)
+            blob = self.__blob_service.get_blob_to_path(self.__container_name, self.path, cached_file_path,
+                                                        if_none_match=old_etag)
+            if blob.properties.etag != old_etag:
+                with open(cached_file_path_etag, 'w') as f:
+                    f.write(blob.properties.etag)
+        except Exception as e:
+            if os.path.exists(cached_file_path):
+                os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
+            if num_retries == 0:
+                raise e
+            else:
+                self.__cache_file_locally(num_retries-1)
         return LocalPath(cached_file_path)
 
     def __read_as_binary(self) -> bytes:
