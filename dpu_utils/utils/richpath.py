@@ -279,13 +279,13 @@ class AzurePath(RichPath):
         except AzureHttpError as aze:
             os.remove(new_filepath)
             if aze.error_code != 'ConditionNotMet':
-                raise aze
+                raise
         except Exception as e:
             if os.path.exists(cached_file_path):
                 os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
                 os.remove(cached_file_path_etag)
             if num_retries == 0:
-                raise e
+                raise
             else:
                 self.__cache_file_locally(num_retries-1)
         return LocalPath(cached_file_path)
