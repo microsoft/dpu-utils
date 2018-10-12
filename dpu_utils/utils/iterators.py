@@ -61,8 +61,13 @@ class MultiWorkerCallableIterator(Iterable):
         for callable_args in argument_iterator:
             self.__in_queue.put(callable_args)
             self.__num_elements += 1
-        self.__out_queue = queue.Queue(maxsize=max_queue_size) if use_threads else multiprocessing.Queue(maxsize=max_queue_size)
-        self.__threads = [threading.Thread(target=lambda: self.__worker(worker_callable)) if use_threads else multiprocessing.Process(target=lambda: self.__worker(worker_callable)) for _ in range(num_workers)]
+        self.__out_queue = queue.Queue(maxsize=max_queue_size) if use_threads else multiprocessing.Queue(
+            maxsize=max_queue_size
+        )
+        self.__threads = [
+            threading.Thread(target=lambda: self.__worker(worker_callable)) if use_threads
+            else multiprocessing.Process(target=lambda: self.__worker(worker_callable)) for _ in range(num_workers)
+        ]
         for worker in self.__threads:
             worker.start()
 
@@ -152,7 +157,9 @@ class DoubleBufferedIterator(Iterator[T]):
             self.__buffer_inner.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(traceback.format_tb(tb))))
+            print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(
+                traceback.format_tb(tb)
+            )))
             self.__buffer_inner.put((e, tb), block=True)
 
     def __worker_outer(self) -> None:
@@ -165,7 +172,9 @@ class DoubleBufferedIterator(Iterator[T]):
             self.__buffer_outer.put(next_element, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (e, "".join(traceback.format_tb(tb))))
+            print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (
+                e, "".join(traceback.format_tb(tb))
+            ))
             self.__buffer_outer.put((e, tb), block=True)
 
     def __iter__(self):

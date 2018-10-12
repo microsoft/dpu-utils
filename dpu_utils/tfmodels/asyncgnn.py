@@ -115,16 +115,20 @@ class AsyncGGNN(object):
             for prop_round in range(self.hyperparams['propagation_rounds']):
                 with tf.variable_scope('prop_round%i' % (prop_round,)):
                     # ---- Declare and fill tensor arrays used in tf.while_loop:
-                    sending_nodes_ta = tf.TensorArray(tf.int32,
-                                                      infer_shape=False,
-                                                      element_shape=[None],
-                                                      size=self.hyperparams['propagation_substeps'] * self.num_edge_types,
-                                                      name='sending_nodes')
-                    edge_labels_ta = tf.TensorArray(tf.float32,
-                                                    infer_shape=False,
-                                                    element_shape=[None, self.hyperparams['edge_label_size']],
-                                                    size=self.hyperparams['propagation_substeps'] * self.num_labeled_edge_types,
-                                                    name='edge_labels')
+                    sending_nodes_ta = tf.TensorArray(
+                        tf.int32,
+                        infer_shape=False,
+                        element_shape=[None],
+                        size=self.hyperparams['propagation_substeps'] * self.num_edge_types,
+                        name='sending_nodes'
+                    )
+                    edge_labels_ta = tf.TensorArray(
+                        tf.float32,
+                        infer_shape=False,
+                        element_shape=[None, self.hyperparams['edge_label_size']],
+                        size=self.hyperparams['propagation_substeps'] * self.num_labeled_edge_types,
+                        name='edge_labels'
+                    )
                     msg_targets_ta = tf.TensorArray(tf.int32,
                                                     infer_shape=False,
                                                     element_shape=[None],
@@ -174,12 +178,18 @@ class AsyncGGNN(object):
                         edge_labels_per_type = []
                         for labeled_edge_typ in range(self.num_labeled_edge_types):
                             sending_states_per_edge_type.append(
-                                new_node_states_ta.gather(sending_nodes_ta.read(substep_id * self.num_edge_types + labeled_edge_typ)))
-                            edge_labels_per_type.append(edge_labels_ta.read(substep_id * self.num_labeled_edge_types + labeled_edge_typ))
+                                new_node_states_ta.gather(sending_nodes_ta.read(
+                                    substep_id * self.num_edge_types + labeled_edge_typ
+                                ))
+                            )
+                            edge_labels_per_type.append(edge_labels_ta.read(
+                                substep_id * self.num_labeled_edge_types + labeled_edge_typ
+                            ))
                         for unlabeled_edge_typ in range(self.num_unlabeled_edge_types):
                             shifted_edge_typ = self.num_labeled_edge_types + unlabeled_edge_typ
-                            sending_states_per_edge_type.append(
-                                new_node_states_ta.gather(sending_nodes_ta.read(substep_id * self.num_edge_types + shifted_edge_typ)))
+                            sending_states_per_edge_type.append(new_node_states_ta.gather(
+                                sending_nodes_ta.read(substep_id * self.num_edge_types + shifted_edge_typ)
+                            ))
 
                         # Collect old states for receiving nodes
                         substep_receiving_nodes = receiving_nodes_ta.read(substep_id)
@@ -189,15 +199,17 @@ class AsyncGGNN(object):
                         msg_targets_this_step = msg_targets_ta.read(substep_id)
                         receiving_node_num_this_step = receiving_node_num_ta.read(substep_id)
 
-                        substep_new_node_states = self.propagate_one_step(sending_states_per_edge_type, edge_labels_per_type,
-                                                                          msg_targets_this_step, receiving_node_num_this_step,
-                                                                          old_receiving_node_states)
+                        substep_new_node_states = self.propagate_one_step(
+                            sending_states_per_edge_type, edge_labels_per_type,
+                            msg_targets_this_step, receiving_node_num_this_step,
+                            old_receiving_node_states
+                        )
 
                         # Write updated states back:
                         new_node_states_ta = new_node_states_ta.scatter(indices=substep_receiving_nodes,
                                                                         value=substep_new_node_states,
                                                                         name="state_scatter_round%i" % (prop_round,))
-                        return (substep_id + 1, new_node_states_ta)
+                        return substep_id + 1, new_node_states_ta
 
                     def is_done(substep_id, new_node_states_ta_unused):
                         return tf.logical_and(substep_id < self.hyperparams['propagation_substeps'],
@@ -229,18 +241,21 @@ class AsyncGGNN(object):
                     messages += self.__parameters['labeled_edge_biases'][edge_typ]
             else:
                 shifted_edge_typ = edge_typ - self.num_labeled_edge_types
-                messages = tf.matmul(sending_state_representations, self.__parameters['unlabeled_edge_weights'][shifted_edge_typ])
+                messages = tf.matmul(
+                    sending_state_representations, self.__parameters['unlabeled_edge_weights'][shifted_edge_typ]
+                )
                 if self.hyperparams['use_edge_bias']:
                     messages += self.__parameters['unlabeled_edge_biases'][shifted_edge_typ]
             sent_messages.append(messages)
 
         # Stack all edge messages and aggregate as sum for each receiving node:
         sent_messages = tf.concat(sent_messages, axis=0)
-        aggregated_received_messages = tf.unsorted_segment_sum(sent_messages, msg_targets_this_step, receiving_node_num_this_step)
+        aggregated_received_messages = tf.unsorted_segment_sum(
+            sent_messages, msg_targets_this_step, receiving_node_num_this_step
+        )
 
         # Combine old states in RNN cell with incoming messages
         aggregated_received_messages.set_shape([None, self.hyperparams['hidden_size']])
         new_node_states = self.__parameters['rnn_cell'](aggregated_received_messages,
                                                         old_receiving_node_states)[1]
         return new_node_states
-

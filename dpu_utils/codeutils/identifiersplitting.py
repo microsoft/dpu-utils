@@ -42,6 +42,7 @@ def split_camelcase(camel_case_identifier: str) -> List[str]:
     result.append(current)
     return result
 
+
 @lru_cache(maxsize=5000)
 def split_identifier_into_parts(identifier: str) -> List[str]:
     """

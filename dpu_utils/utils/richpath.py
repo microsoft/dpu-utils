@@ -56,7 +56,9 @@ class RichPath(ABC):
                 blob_service = BlockBlobService(account_name=account_name,
                                                 account_key=account_key)
             else:
-                raise Exception("Access to Azure storage account '%s' requires either account_key or sas_token!" % (account_name,))
+                raise Exception("Access to Azure storage account '%s' requires either account_key or sas_token!" % (
+                    account_name,
+                ))
 
             # Replace environment variables in the cache location
             cache_location = account_info.get('cache_location')
@@ -213,6 +215,7 @@ class LocalPath(RichPath):
     def exists(self) -> bool:
         return os.path.exists(self.path)
 
+
 class AzurePath(RichPath):
     def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
                  cache_location: Optional[str]):
@@ -316,11 +319,11 @@ class AzurePath(RichPath):
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
         yield from (AzurePath(blob.name,
-                          azure_container_name=self.__container_name,
-                          azure_blob_service=self.__blob_service,
-                          cache_location=self.__cache_location)
-                for blob in self.__blob_service.list_blobs(self.__container_name, self.path)
-                if fnmatch.fnmatch(blob.name, full_pattern))
+                              azure_container_name=self.__container_name,
+                              azure_blob_service=self.__blob_service,
+                              cache_location=self.__cache_location)
+                    for blob in self.__blob_service.list_blobs(self.__container_name, self.path)
+                    if fnmatch.fnmatch(blob.name, full_pattern))
 
     def join(self, filename: str) -> 'AzurePath':
         return AzurePath(os.path.join(self.path, filename),

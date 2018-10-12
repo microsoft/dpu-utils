@@ -5,6 +5,7 @@ import numpy as np
 
 __all__ = ['Vocabulary']
 
+
 class Vocabulary(Sized):
     """
     A simple vocabulary that maps strings to unique ids (and back).
@@ -51,7 +52,8 @@ class Vocabulary(Sized):
         else:
             return self.token_to_id[self.get_unk()]
 
-    def get_id_or_unk_multiple(self, tokens: List[str], pad_to_size: Optional[int]=None, padding_element: int=0) -> List[int]:
+    def get_id_or_unk_multiple(self, tokens: List[str], pad_to_size: Optional[int]=None,
+                               padding_element: int=0) -> List[int]:
         if pad_to_size is not None:
             tokens = tokens[:pad_to_size]
 

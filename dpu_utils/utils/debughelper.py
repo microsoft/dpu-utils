@@ -5,6 +5,7 @@ from typing import Callable
 
 __all__= ['run_and_debug']
 
+
 def run_and_debug(func: Callable[[], None], enable_debugging: bool)-> None:
     try:
         func()
