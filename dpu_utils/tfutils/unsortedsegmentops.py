@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 def unsorted_segment_logsumexp(scores, segment_ids, num_segments):
     """Perform an unsorted segment safe logsumexp."""
     # Note: if a segment is empty, the smallest value for the score will be returned,

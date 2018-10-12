@@ -1,2 +1,2 @@
-name="dpu_utils"
+name = "dpu_utils"
 

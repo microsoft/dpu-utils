@@ -1,8 +1,9 @@
-from typing import Optional
-
 import numpy as np
 
+from typing import Optional
+
 __all__ = ['CharTensorizer']
+
 
 class CharTensorizer:
     """Tensorize strings into characters"""
@@ -40,6 +41,7 @@ class CharTensorizer:
     def tensorize_str(self, input: str)-> np.ndarray:
         if self.__lower_case_all:
             input = input.lower()
+
         def char_iterator():
             for i, c in enumerate(input):
                 if self.__max_num_chars is not None and i >= self.__max_num_chars:

@@ -7,7 +7,8 @@ BIG_NUMBER = 1e7
 SMALL_NUMBER = 1e-7
 
 
-def pick_indices_from_probs(probs: np.ndarray, num_picks: int, use_sampling: bool=False, temperature: float=0.5) -> Iterable[int]:
+def pick_indices_from_probs(probs: np.ndarray, num_picks: int, use_sampling: bool=False,
+                            temperature: float=0.5) -> Iterable[int]:
     """Given an array of probabilities, pick up to num_samples unique indices from it."""
     if use_sampling:
         # First, consider the temperature for sampling:

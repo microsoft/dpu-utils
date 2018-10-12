@@ -2,6 +2,7 @@ import subprocess
 
 __all__ = ['git_tag_run']
 
+
 def git_tag_run(train_run_id: str)-> str:
     """Tag current version of code in git"""
     cur_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'])

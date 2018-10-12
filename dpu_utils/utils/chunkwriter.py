@@ -7,6 +7,7 @@ T = TypeVar('T')
 
 __all__ = ['ChunkWriter']
 
+
 class ChunkWriter(Generic[T]):
     """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz or .json.gz
     the appropriate format will be used for the chunks."""
@@ -43,7 +44,9 @@ class ChunkWriter(Generic[T]):
     def __flush(self)-> None:
         if len(self.__current_chunk) == 0:
             return
-        outfile = self.__out_folder.join('%s%03d%s' % (self.__file_prefix, self.__num_files_written, self.__file_suffix))
+        outfile = self.__out_folder.join(
+            '%s%03d%s' % (self.__file_prefix, self.__num_files_written, self.__file_suffix)
+        )
         if self.__parallel_writers > 0:
             self.__writer_executors.submit(lambda: outfile.save_as_compressed_file(self.__current_chunk))
         else:
@@ -61,5 +64,3 @@ class ChunkWriter(Generic[T]):
         self.__flush()
         if self.__parallel_writers > 0:
             self.__writer_executors.shutdown(wait=True)
-
-
