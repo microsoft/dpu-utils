@@ -281,8 +281,9 @@ class AzurePath(RichPath):
                 f.write(blob.properties.etag)
         except AzureHttpError as aze:
             os.remove(new_filepath)
-            if aze.error_code != 'ConditionNotMet':
+            if aze.status_code != 304:  # HTTP 304: Not Modified
                 raise
+
         except Exception as e:
             if os.path.exists(cached_file_path):
                 os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
