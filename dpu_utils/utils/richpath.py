@@ -244,10 +244,13 @@ class AzurePath(RichPath):
     def is_dir(self) -> bool:
         blob_list = self.__blob_service.list_blobs(self.__container_name, self.path, num_results=1)
         try:
-            next(iter(blob_list))
+            blob = next(iter(blob_list))
+            if blob.name == self.path:
+                # Listing this, yields the path itself, thus it's a file.
+                return False
             return True
         except StopIteration:
-            return False
+            return False # This path does not exist, return False by convention, similar to os.path.isdir()
 
     def make_as_dir(self) -> None:
         # Note: Directories don't really exist in blob storage.
