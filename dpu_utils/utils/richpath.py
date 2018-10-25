@@ -152,6 +152,9 @@ class RichPath(ABC):
     def exists(self) -> bool:
         pass
 
+    @abstractmethod
+    def to_local_path(self) -> 'LocalPath':
+        pass
 
 class LocalPath(RichPath):
     def __init__(self, path: str):
@@ -220,6 +223,9 @@ class LocalPath(RichPath):
     def exists(self) -> bool:
         return os.path.exists(self.path)
 
+    def to_local_path(self) -> 'LocalPath':
+        return self
+
 
 class AzurePath(RichPath):
     def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
@@ -264,8 +270,12 @@ class AzurePath(RichPath):
         cached_file_path = self.__cache_file_locally()
         return cached_file_path.read_as_binary()
 
+    @property
+    def __cached_file_path(self) -> str:
+        return  os.path.join(self.__cache_location, self.__container_name, self.path)
+
     def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
-        cached_file_path = os.path.join(self.__cache_location, self.__container_name, self.path)
+        cached_file_path = self.__cached_file_path
         cached_file_path_etag = cached_file_path+'.etag'  # Create an .etag file containing the object etag
         old_etag = None
         if os.path.exists(cached_file_path_etag):
@@ -366,3 +376,13 @@ class AzurePath(RichPath):
 
     def exists(self) -> bool:
         return self.__blob_service.exists(self.__container_name, self.path)
+
+    def to_local_path(self) -> LocalPath:
+        """Cache all files locally and return their local path."""
+        assert self.__cache_location is not None, 'Cannot convert AzurePath to LocalPath when no cache location exists.'
+        if self.is_dir():
+            for file in self.iterate_filtered_files_in_dir('*'):
+                file.__cache_file_locally()
+            return LocalPath(self.__cached_file_path)
+        else:
+            return self.__cache_file_locally()
