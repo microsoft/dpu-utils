@@ -272,7 +272,7 @@ class AzurePath(RichPath):
 
     @property
     def __cached_file_path(self) -> str:
-        return  os.path.join(self.__cache_location, self.__container_name, self.path)
+        return os.path.join(self.__cache_location, self.__container_name, self.path)
 
     def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
         cached_file_path = self.__cached_file_path
@@ -382,7 +382,7 @@ class AzurePath(RichPath):
         assert self.__cache_location is not None, 'Cannot convert AzurePath to LocalPath when no cache location exists.'
         if self.is_dir():
             for file in self.iterate_filtered_files_in_dir('*'):
-                file.__cache_file_locally()
+                file.to_local_path()
             return LocalPath(self.__cached_file_path)
         else:
             return self.__cache_file_locally()
