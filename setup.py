@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.1.15',
+      version='0.1.16',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       url='https://github.com/microsoft/dpu-utils',
