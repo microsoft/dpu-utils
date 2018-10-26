@@ -11,4 +11,5 @@ setuptools.setup(
       install_requires=[
           'azure-storage', 'numpy'
       ],
+      test_suite="tests",
       zip_safe=False)
