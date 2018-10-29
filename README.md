@@ -28,6 +28,24 @@ Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
 
+## Tests
+
+### Run the unit tests
+
+```bash
+python setup.py test
+```
+
+### Generate code coverage reports
+
+```bash
+# pip install coverage
+coverage run --source dpu_utils/ setup.py test && \
+  coverage html
+```
+
+The resulting HTML file will be in `htmlcov/index.html`.
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
