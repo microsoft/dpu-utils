@@ -29,6 +29,3 @@ class TestSplitCamelCase(unittest.TestCase):
 
     def test_special_characters_are_split(self):
         self.run_test("@var-$var", ["@", "var", "-$", "var"])
-
-    def test_snake_case_is_split(self):
-        self.run_test("snake_case", ["snake", "_", "case"])
