@@ -9,7 +9,7 @@ __all__ = ['ChunkWriter']
 
 
 class ChunkWriter(Generic[T]):
-    """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz or .json.gz
+    """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz, .json.gz or .jsonl.gz
     the appropriate format will be used for the chunks."""
     def __init__(self, out_folder: Union[RichPath, str], file_prefix: str, max_chunk_size: int, file_suffix: str,
                  parallel_writers: int=0):
