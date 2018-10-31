@@ -2,6 +2,12 @@
 
 This contains a set of utilities used across projects of the [DPU team](https://www.microsoft.com/en-us/research/project/program/).
 
+## Installation
+
+pip install --extra-index-url https://dpucode.z6.web.core.windows.net/simple dpu-utils
+
+## Overview Of Tools
+
 Generic Utilities:
 * `dpu_utils.utils.RichPath` a convenient way of using both paths and Azure paths in your code.
 * `dpu_utils.utils.*Iterator` iterator wrappers that can parallelize their iteration in other threads/processes.
