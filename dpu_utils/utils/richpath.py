@@ -14,6 +14,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import total_ordering
+from pathlib import Path
 from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
@@ -351,6 +352,15 @@ class AzurePath(RichPath):
         local_temp_file.save_as_compressed_file(data)
         self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_temp_file.path)
         os.unlink(local_temp_file.path)
+
+    def upload_local_file(self, filename: str) -> None:
+        """Upload local file to blob.  The RichPath is treated as a directory."""
+        full_path = Path(filename)
+        assert full_path.exists(), '%s does not exist.' % filename
+        assert full_path.is_file(), 'the filename argument must be a filename, received the directory: %s' % filename
+        dest_path = self.path.join(full_path.name)
+        print('Uploading %s to %s' % (full_path.name, dest_path))
+        self.__blob_service.create_blob_from_path(self.__container_name, dest_path, full_path.path)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
