@@ -355,12 +355,12 @@ class AzurePath(RichPath):
 
     def upload_local_file(self, filename: str) -> None:
         """Upload local file to blob.  The RichPath is treated as a directory."""
-        full_path = Path(filename)
-        assert full_path.exists(), '%s does not exist.' % filename
-        assert full_path.is_file(), 'the filename argument must be a filename, received the directory: %s' % filename
-        dest_path = self.path.join(full_path.name)
-        print('Uploading %s to %s' % (full_path.name, dest_path))
-        self.__blob_service.create_blob_from_path(self.__container_name, dest_path, full_path.path)
+        source_path = Path(filename)
+        assert source_path.exists(), '%s does not exist.' % filename
+        assert source_path.is_file(), 'the filename argument must be a filename, received the directory: %s' % filename
+        dest_path = self.path.join(source_path.name)
+        print('Uploading %s to %s' % (source_path.name, dest_path))
+        self.__blob_service.create_blob_from_path(self.__container_name, dest_path, source_path.path)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
