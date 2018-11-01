@@ -162,14 +162,14 @@ class RichPath(ABC):
     def to_local_path(self) -> 'LocalPath':
         pass
 
-    def copy_to(self, target_path: 'RichPath') -> None:
-        if self.is_dir():
-            assert target_path.is_dir() or not target_path.exists(), 'Source path is a directory, but the target is a file.'
-            for file in self.iterate_filtered_files_in_dir('*'):
-                target_path = target_path.join(file.path[len(target_path.path)])
-                file.copy_to(target_path)
+    def copy_from(self, source_path: 'RichPath') -> None:
+        if source_path.is_dir():
+            assert self.is_dir() or not self.exists(), 'Source path is a directory, but the target is a file.'
+            for file in source_path.iterate_filtered_files_in_dir('*'):
+                target_file_path = self.join(file.path[len(source_path.path):])
+                target_file_path.copy_from(file)
         else:
-            target_path._copy_from_file(self)
+            self._copy_from_file(source_path)
 
     def _copy_from_file(self, from_file: 'RichPath'):
         """Default implementation for copying a file into another. This converts the from_file to a local path
@@ -385,18 +385,6 @@ class AzurePath(RichPath):
         local_temp_file.save_as_compressed_file(data)
         self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_temp_file.path)
         os.unlink(local_temp_file.path)
-
-    def upload_local_file(self, filename: Union[str, LocalPath], print_log: bool=True) -> None:
-        """Upload local file to blob.  The current RichPath is treated as a the target directory."""
-        if isinstance(filename, str):
-            filename = RichPath.create(filename)  # type: LocalPath
-
-        assert filename.exists(), '%s does not exist.' % filename
-        assert filename.is_file(), 'the filename argument must be a filename, received the directory: %s' % filename
-        destination = self.join(filename.basename())
-        if print_log:
-            print('Uploading %s to %s' % (filename, destination))
-        destination._copy_file_from_local_path(filename)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
