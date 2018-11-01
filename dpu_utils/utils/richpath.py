@@ -4,6 +4,8 @@ import json
 import os
 import glob
 import fnmatch
+import shutil
+import time
 import zlib
 import io
 import pickle
@@ -14,7 +16,6 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import total_ordering
-from pathlib import Path
 from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
@@ -95,6 +96,10 @@ class RichPath(ABC):
         pass
 
     @abstractmethod
+    def is_file(self) -> bool:
+        pass
+
+    @abstractmethod
     def make_as_dir(self) -> None:
         pass
 
@@ -157,6 +162,31 @@ class RichPath(ABC):
     def to_local_path(self) -> 'LocalPath':
         pass
 
+    @abstractmethod
+    def relpath(self, base: 'RichPath') -> str:
+        pass
+
+    def copy_from(self, source_path: 'RichPath', overwrite_ok: bool=True) -> None:
+        if source_path.is_dir():
+            assert self.is_dir() or not self.exists(), 'Source path is a directory, but the target is a file.'
+            for file in source_path.iterate_filtered_files_in_dir('*'):
+                target_file_path = self.join(file.relpath(source_path))
+                target_file_path.copy_from(file, overwrite_ok=overwrite_ok)
+        else:
+            if not overwrite_ok and self.exists():
+                raise Exception('Overwriting file when copying.')
+            self._copy_from_file(source_path)
+
+    def _copy_from_file(self, from_file: 'RichPath') -> None:
+        """Default implementation for copying a file into another. This converts the from_file to a local path
+        and copies from there."""
+        assert from_file.exists()
+        self._copy_from_local_file(from_file.to_local_path())
+
+    @abstractmethod
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
+        pass
+
 class LocalPath(RichPath):
     def __init__(self, path: str):
         super().__init__(path)
@@ -173,8 +203,15 @@ class LocalPath(RichPath):
     def is_dir(self) -> bool:
         return os.path.isdir(self.path)
 
+    def is_file(self) -> bool:
+        return os.path.isfile(self.path)
+
     def make_as_dir(self):
         os.makedirs(self.path, exist_ok=True)
+
+    def relpath(self, base: 'LocalPath') -> str:
+        assert isinstance(base, LocalPath)
+        return os.path.relpath(self.path, base.path)
 
     def read_as_binary(self) -> bytes:
         if self.__is_gzipped(self.path):
@@ -227,6 +264,10 @@ class LocalPath(RichPath):
     def to_local_path(self) -> 'LocalPath':
         return self
 
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
+        os.makedirs(os.path.dirname(self.path) ,exist_ok=True)
+        shutil.copy2(src=local_file.path, dst=self.path)
+
 
 class AzurePath(RichPath):
     def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
@@ -258,6 +299,13 @@ class AzurePath(RichPath):
             return True
         except StopIteration:
             return False # This path does not exist, return False by convention, similar to os.path.isdir()
+
+    def is_file(self) -> bool:
+        return not self.is_dir() and self.exists()
+
+    def relpath(self, base: 'AzurePath') -> str:
+        assert isinstance(base, AzurePath)
+        return os.path.relpath(self.path, base.path)
 
     def make_as_dir(self) -> None:
         # Note: Directories don't really exist in blob storage.
@@ -353,15 +401,6 @@ class AzurePath(RichPath):
         self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_temp_file.path)
         os.unlink(local_temp_file.path)
 
-    def upload_local_file(self, filename: str) -> None:
-        """Upload local file to blob.  The RichPath is treated as a directory."""
-        source_path = Path(filename)
-        assert source_path.exists(), '%s does not exist.' % filename
-        assert source_path.is_file(), 'the filename argument must be a filename, received the directory: %s' % filename
-        dest_path = self.path.join(source_path.name)
-        print('Uploading %s to %s' % (source_path.name, dest_path))
-        self.__blob_service.create_blob_from_path(self.__container_name, dest_path, source_path.path)
-
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
         yield from (AzurePath(blob.name,
@@ -372,7 +411,7 @@ class AzurePath(RichPath):
                     if fnmatch.fnmatch(blob.name, full_pattern))
 
     def join(self, filename: str) -> 'AzurePath':
-        return AzurePath(os.path.join(self.path, filename),
+        return AzurePath(os.path.join(self.path.rstrip('/'), filename),
                          azure_container_name=self.__container_name,
                          azure_blob_service=self.__blob_service,
                          cache_location=self.__cache_location)
@@ -396,3 +435,20 @@ class AzurePath(RichPath):
             return LocalPath(self.__cached_file_path)
         else:
             return self.__cache_file_locally()
+
+    def _copy_from_file(self, from_file: 'RichPath') -> None:
+        if not isinstance(from_file, AzurePath):
+            # Default to copying the file locally first.
+            super()._copy_from_file(from_file)
+            return
+        assert from_file.exists()
+        source_url = self.__blob_service.make_blob_url(from_file.__container_name, from_file.path,
+                                                       sas_token=from_file.__blob_service.sas_token)
+        copy = self.__blob_service.copy_blob(self.__container_name, self.path, copy_source=source_url)
+        while copy.status == 'pending':
+            time.sleep(.1)
+        if copy.status != 'success':
+            raise Exception('Failed to copy between Azure blobs: %s %s' % (copy.status, copy.status_description))
+
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
+        self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_file.path)
