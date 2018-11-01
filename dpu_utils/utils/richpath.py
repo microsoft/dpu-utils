@@ -16,7 +16,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import total_ordering
-from typing import Any, List, Optional, Iterable, Union
+from typing import Any, List, Optional, Iterable
 
 from azure.storage.blob import BlockBlobService
 from azure.common import AzureHttpError
@@ -162,23 +162,25 @@ class RichPath(ABC):
     def to_local_path(self) -> 'LocalPath':
         pass
 
-    def copy_from(self, source_path: 'RichPath') -> None:
+    def copy_from(self, source_path: 'RichPath', overwrite_ok: bool=True) -> None:
         if source_path.is_dir():
             assert self.is_dir() or not self.exists(), 'Source path is a directory, but the target is a file.'
             for file in source_path.iterate_filtered_files_in_dir('*'):
                 target_file_path = self.join(file.path[len(source_path.path):])
-                target_file_path.copy_from(file)
+                target_file_path.copy_from(file, overwrite_ok=overwrite_ok)
         else:
+            if not overwrite_ok and self.exists():
+                raise Exception('Overwriting file when copying.')
             self._copy_from_file(source_path)
 
-    def _copy_from_file(self, from_file: 'RichPath'):
+    def _copy_from_file(self, from_file: 'RichPath') -> None:
         """Default implementation for copying a file into another. This converts the from_file to a local path
         and copies from there."""
-        assert self.exists()
-        self._copy_file_from_local_path(from_file.to_local_path())
+        assert from_file.exists()
+        self._copy_from_local_file(from_file.to_local_path())
 
     @abstractmethod
-    def _copy_file_from_local_path(self, local_file: 'LocalPath') -> None:
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
         pass
 
 class LocalPath(RichPath):
@@ -254,7 +256,7 @@ class LocalPath(RichPath):
     def to_local_path(self) -> 'LocalPath':
         return self
 
-    def _copy_file_from_local_path(self, local_file: 'LocalPath') -> None:
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
         shutil.copy2(src=local_file.path, dst=self.path)
 
 
@@ -421,18 +423,19 @@ class AzurePath(RichPath):
         else:
             return self.__cache_file_locally()
 
-    def _copy_from_file(self, from_file: 'RichPath'):
+    def _copy_from_file(self, from_file: 'RichPath') -> None:
         if not isinstance(from_file, AzurePath):
-            # Default to copying the file locally
+            # Default to copying the file locally first.
             super()._copy_from_file(from_file)
             return
-        assert self.exists()
-        source_url = self.__blob_service.make_blob_url(from_file.__container_name, from_file.path)
-        copy = self.__blob_service.copy_blob(self.__container_name, self.path, source_url)
+        assert from_file.exists()
+        source_url = self.__blob_service.make_blob_url(from_file.__container_name, from_file.path,
+                                                       sas_token=from_file.__blob_service.sas_token)
+        copy = self.__blob_service.copy_blob(self.__container_name, self.path, copy_source=source_url)
         while copy.status == 'pending':
             time.sleep(.1)
         if copy.status != 'success':
             raise Exception('Failed to copy between Azure blobs: %s %s' % (copy.status, copy.status_description))
 
-    def _copy_file_from_local_path(self, local_file: 'LocalPath') -> None:
+    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
         self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_file.path)
