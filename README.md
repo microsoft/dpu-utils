@@ -5,7 +5,7 @@ This contains a set of utilities used across projects of the [DPU team](https://
 
 ## Installation
 
-`pip install --extra-index-url https://dpucode.z6.web.core.windows.net/simple dpu-utils`
+`pip install dpu-utils`
 
 ## Overview of Utilities:
 
