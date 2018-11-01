@@ -1,4 +1,5 @@
 # DPU Utilities
+[![Build Status](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_apis/build/status/Microsoft.dpu-utils?branchName=master)](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_build/latest?definitionId=3)
 
 This contains a set of utilities used across projects of the [DPU team](https://www.microsoft.com/en-us/research/project/program/).
 
