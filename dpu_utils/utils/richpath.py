@@ -411,7 +411,7 @@ class AzurePath(RichPath):
                     if fnmatch.fnmatch(blob.name, full_pattern))
 
     def join(self, filename: str) -> 'AzurePath':
-        return AzurePath(os.path.join(self.path, filename),
+        return AzurePath(os.path.join(self.path.rstrip('/'), filename),
                          azure_container_name=self.__container_name,
                          azure_blob_service=self.__blob_service,
                          cache_location=self.__cache_location)
