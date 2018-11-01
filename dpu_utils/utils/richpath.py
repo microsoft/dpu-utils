@@ -162,11 +162,15 @@ class RichPath(ABC):
     def to_local_path(self) -> 'LocalPath':
         pass
 
+    @abstractmethod
+    def relpath(self, base: 'RichPath') -> str:
+        pass
+
     def copy_from(self, source_path: 'RichPath', overwrite_ok: bool=True) -> None:
         if source_path.is_dir():
             assert self.is_dir() or not self.exists(), 'Source path is a directory, but the target is a file.'
             for file in source_path.iterate_filtered_files_in_dir('*'):
-                target_file_path = self.join(file.path[len(source_path.path):])
+                target_file_path = self.join(file.relpath(source_path))
                 target_file_path.copy_from(file, overwrite_ok=overwrite_ok)
         else:
             if not overwrite_ok and self.exists():
@@ -204,6 +208,10 @@ class LocalPath(RichPath):
 
     def make_as_dir(self):
         os.makedirs(self.path, exist_ok=True)
+
+    def relpath(self, base: 'LocalPath') -> str:
+        assert isinstance(base, LocalPath)
+        return os.path.relpath(self.path, base.path)
 
     def read_as_binary(self) -> bytes:
         if self.__is_gzipped(self.path):
@@ -257,6 +265,7 @@ class LocalPath(RichPath):
         return self
 
     def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
+        os.makedirs(os.path.dirname(self.path) ,exist_ok=True)
         shutil.copy2(src=local_file.path, dst=self.path)
 
 
@@ -293,6 +302,10 @@ class AzurePath(RichPath):
 
     def is_file(self) -> bool:
         return not self.is_dir() and self.exists()
+
+    def relpath(self, base: 'AzurePath') -> str:
+        assert isinstance(base, AzurePath)
+        return os.path.relpath(self.path, base.path)
 
     def make_as_dir(self) -> None:
         # Note: Directories don't really exist in blob storage.
