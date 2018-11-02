@@ -16,7 +16,7 @@ import re
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import total_ordering
-from typing import Any, List, Optional, Iterable
+from typing import Any, List, Optional, Iterable, Callable
 
 from azure.storage.blob import BlockBlobService
 from azure.common import AzureHttpError
@@ -118,9 +118,22 @@ class RichPath(ABC):
     def read_as_json(self) -> Any:
         return json.loads(self.read_as_text(), object_pairs_hook=OrderedDict)
 
-    def read_as_jsonl(self) -> Iterable[Any]:
+    def read_as_jsonl(self, error_handling: Optional[Callable[[str, Exception], None]]=None) -> Iterable[Any]:
+        """
+        Parse JSONL files. See http://jsonlines.org/ for more.
+
+        :param error_handling: a callable that receives the original line and the exception object and takes
+                over how parse error handling should happen.
+        :return: a iterator of the parsed objects of each line.
+        """
         for line in self.read_as_text().splitlines():
-            yield json.loads(line, object_pairs_hook=OrderedDict)
+            try:
+                yield json.loads(line, object_pairs_hook=OrderedDict)
+            except Exception as e:
+                if error_handling is None:
+                    raise
+                else:
+                    error_handling(line, e)
 
     @abstractmethod
     def read_as_pickle(self) -> Any:
