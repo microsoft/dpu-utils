@@ -33,8 +33,9 @@ TensorFlow Models:
 * `dpu_utils.tfmodels.AsyncGGNN` an asynchronous GGNN implementation.
 
 Code-related Utilities
-* `dpu_utils.codeutils.split_identifier_into_parts` split identifiers into subtokens on CamelCase and snake_case.
+* `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
+* `dpu_utils.codeutils.get_language_keywords()` that retrieves the keywords for a given language.
 
 ## Tests
 
