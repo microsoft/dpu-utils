@@ -1,5 +1,6 @@
 import os
 import keyword
+from functools import lru_cache
 from typing import List
 
 
@@ -8,6 +9,7 @@ def load_file(name: str) -> List[str]:
         return [l.strip() for l in f if len(l.strip()) > 0]
 
 
+@lru_cache()
 def get_language_keywords(language: str) -> List[str]:
     if language == 'c':
         return load_file('c.txt')
