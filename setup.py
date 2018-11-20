@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.1.22',
+      version='0.1.23',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       long_description=long_description,
@@ -13,6 +13,7 @@ setuptools.setup(
       url='https://github.com/microsoft/dpu-utils',
       author='Deep Procedural Intelligence',
       packages=setuptools.find_packages(),
+      include_package_data=True,
       install_requires=[
           'azure-storage', 'numpy'
       ],

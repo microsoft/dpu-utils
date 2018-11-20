@@ -1,1 +1,3 @@
-include dpu_utils/codeutils/keywords/*.txt
+include *.txt
+include LICENSE
+recursive-include dpu_utils *.txt
