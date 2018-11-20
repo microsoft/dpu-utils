@@ -35,7 +35,7 @@ TensorFlow Models:
 Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
-* `dpu_utils.codeutils.get_language_keywords()` that retrieves the keywords of a given language.
+* `dpu_utils.codeutils.get_language_keywords()` that retrieves the keyword tokens for many programming languages.
 
 ## Tests
 
