@@ -39,6 +39,7 @@ class RichPath(ABC):
     @staticmethod
     def create(path: str, azure_info_path: Optional[str]=None):
         if path.startswith(AZURE_PATH_PREFIX):
+            assert azure_info_path is not None, "An AzurePath cannot be created when azure_info_path is None."
             # Strip off the AZURE_PATH_PREFIX:
             path = path[len(AZURE_PATH_PREFIX):]
             account_name, container_name, path = path.split('/', 2)
