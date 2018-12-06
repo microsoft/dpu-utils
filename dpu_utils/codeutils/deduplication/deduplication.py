@@ -11,7 +11,23 @@ DocumentId = TypeVar('DocumentId', bound=Hashable)
 
 
 class DuplicateDetector(Generic[DocumentId]):
-    """Detect near-duplicate code."""
+    """Detect near-duplicate code.
+
+    This class accepts a list of tokens within the some code snippet. It then approximately finds all identifier
+    tokens and creates a set T_1 with those tokens and a multiset T_2 with the same tokens.
+
+    A file `i` is considered to be a duplicate with another one `j` if the Jaccard similarity of T_1^i and T_1^j
+    is more than `set_similarity_threshold` and the Jaccard similarity of T_2^i and T_2^j is more than
+    `multiset_similarity_threshold`. Documents with less than `min_num_tokens_per_document` are not considered.
+
+    This follows the general principles in
+
+        Sajnani H, Saini V, Svajlenko J, Roy CK, Lopes CV.
+        SourcererCC: scaling code clone detection to big-code.
+        In Software Engineering (ICSE), 2016
+        IEEE/ACM 38th International Conference on 2016 May 14 (pp. 1157-1168)
+
+    """
 
     IDENTIFIER_REGEX = re.compile('[_a-zA-Z][_a-zA-Z0-9]*')
 

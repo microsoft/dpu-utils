@@ -36,6 +36,20 @@ Code-related Utilities
 * `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
 * `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
 * `dpu_utils.codeutils.get_language_keywords()` that retrieves the keyword tokens for many programming languages.
+* `dpu_utils.codeutils.deduplication.DuplicateDetector` that detects duplicates in codebases.
+
+## Command-line tools
+
+##### Approximate Duplicate Code Detection
+You can use the `deduplicationcli` command to detect duplicates in pre-processed source code, by invoking
+```bash
+ $ deduplicationcli DATA_PATH OUT_JSON
+```
+where `DATA_PATH` is a file containing tokenized `.jsonl.gz` files and `OUT_JSON` is the target output file.
+For more options look at `--help`.
+
+An exact (but usually slower) version of this can be found [here](https://github.com/Microsoft/near-duplicate-code-detector)
+along with code to tokenize Java, C#, Python and JavaScript into the relevant formats.
 
 ## Tests
 
