@@ -15,7 +15,7 @@ setuptools.setup(
       packages=setuptools.find_packages(),
       include_package_data=True,
       install_requires=[
-          'azure-storage', 'numpy', 'docopt', 'tqdm'
+          'azure-storage', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch'
       ],
       scripts=['dpu_utils/codeutils/deduplication/deduplicationcli'],
       test_suite="tests",
