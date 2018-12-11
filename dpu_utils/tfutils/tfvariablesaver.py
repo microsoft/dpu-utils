@@ -10,7 +10,7 @@ class TFVariableSaver:
     def __init__(self):
         self.__saved_variables = {}  # type: Dict[str, np.ndarray]
 
-    def save_all(self, session: tf.Session, exclude_variable: Optional[Callable[[str], bool]]) -> None:
+    def save_all(self, session: tf.Session, exclude_variable: Optional[Callable[[str], bool]]=None) -> None:
         self.__saved_variables = {}
         for variable in session.graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
             assert variable.name not in self.__saved_variables
