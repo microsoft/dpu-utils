@@ -29,6 +29,34 @@ __all__ = ['RichPath', 'LocalPath', 'AzurePath']
 
 @total_ordering
 class RichPath(ABC):
+    """
+    RichPath is an abstraction layer of local and remote paths allowing unified access
+    of both local and remote files. Currently, only local and Azure blob paths are supported.
+    
+    To use Azure paths, a .json configuration file needs to be passed in the
+    `RichPath.create()` function. The file has the format:
+    
+    ```
+    {
+        "storage_account_name": {
+            "sas_token": "the secret",
+            "cache_location": "optional location to cache blobs locally"
+        }
+        ...
+    }
+    ```
+    Where `storage_account_name` is the name of the storage account in the Azure portal.
+    Multiple storage accounts can be placed in a single file. This allows to address blobs
+    and "directories" as `azure://storage_account_name/container_name/path/to/blob`. The
+    Azure SAS token can be retrieved from the Azure portal or from the Azure Storage Explorer.
+    
+    If an external library requires a local path, you can ensure that a `RichPath`
+    object represents a local (possibly cached) object by returning
+    ```
+    original_object.to_local_path().path
+    ```
+    which will download the remote object(s), if needed, and provide a local path.
+    """
     def __init__(self, path: str):
         self.__path = path
 
@@ -38,6 +66,10 @@ class RichPath(ABC):
 
     @staticmethod
     def create(path: str, azure_info_path: Optional[str]=None):
+        """This creates a RichPath object based on the input path.
+        To create a remote path, just prefix it appropriately and pass
+        in the path to the .json configuration.
+        """
         if path.startswith(AZURE_PATH_PREFIX):
             assert azure_info_path is not None, "An AzurePath cannot be created when azure_info_path is None."
             # Strip off the AZURE_PATH_PREFIX:
