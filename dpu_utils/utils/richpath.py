@@ -293,7 +293,7 @@ class LocalPath(RichPath):
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['LocalPath']:
         yield from (LocalPath(path)
-                    for path in glob.iglob(os.path.join(self.path, file_pattern)))
+                    for path in glob.iglob(os.path.join(self.path, file_pattern), recursive=True))
 
     def join(self, filename: str) -> 'LocalPath':
         return LocalPath(os.path.join(self.path, filename))
