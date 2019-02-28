@@ -27,7 +27,7 @@ class CharTensorizer:
         return self.__max_num_chars
 
     def num_chars_in_vocabulary(self)-> int:
-        return len(self.__ALPHABET)
+        return len(self.__ALPHABET_DICT)
 
     def __get_char_idx(self, character: str) -> int:
         idx = self.__ALPHABET_DICT.get(character)
