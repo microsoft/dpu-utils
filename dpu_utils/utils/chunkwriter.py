@@ -24,7 +24,7 @@ class ChunkWriter(Generic[T]):
 
         self.__num_files_written = 0  # type: int
 
-        self.__parallel_writers = 0
+        self.__parallel_writers = parallel_writers
         if self.__parallel_writers > 0:
             self.__writer_executors = ThreadPoolExecutor(max_workers=self.__parallel_writers)
 
