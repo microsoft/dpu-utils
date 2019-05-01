@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict
-from typing import List, Dict, Set, TypeVar, Generic, Iterable, Tuple, Hashable, Optional
+from typing import List, Dict, Set, TypeVar, Generic, Iterable, Tuple, Hashable, Optional, Callable
 import re
 import numpy as np
 
@@ -115,16 +115,22 @@ class DuplicateDetector(Generic[DocumentId]):
 
         print('Duplication Ratio %.2f%%' % ((num_cloned_files - len(clone_sets)) / total_num_files * 100))
 
-    def compute_ids_to_exclude(self) -> Set[DocumentId]:
+    def compute_ids_to_exclude(self, keep_selector: Optional[Callable[[Set[DocumentId]], DocumentId]]=None) -> Set[DocumentId]:
         """Compute a set of document ids to discard in the currently indexed documents.
 
-        Arbitrarily excludes one document id from each cluster of duplicates, and returns
-        a set of the remaining document ids to exclude in order to de-duplicate your data.
+        :param keep_selector: a lambda that accepts a set of DocumentId's and returns the DocumentId to keep.
+            If the DocumentId is not contained in input set, the whole cluster of duplicates is excluded.
+            If keep_selector is None then it arbitrarily excludes one document id from each cluster of duplicates, and returns
+            a set of the remaining document ids to exclude in order to de-duplicate your data.
         """
         duplicate_clusters = self.compute_duplicates()
         # remove one document from each duplicate set to keep
         for cluster in duplicate_clusters:
-            cluster.pop()
+            if keep_selector is None:
+                cluster.pop()   # Remove arbitrary element
+            else:
+                document_to_keep = keep_selector(cluster)
+                cluster.discard(document_to_keep)
 
         # flatten out the lists of sets into one superset, each element being a document_id that you will discard
         return set.union(*duplicate_clusters)
