@@ -9,6 +9,16 @@ __all__ = ['Vocabulary']
 class Vocabulary(Sized):
     """
     A simple vocabulary that maps strings to unique ids (and back).
+
+    To create a vocabulary use `Vocabulary.create_vocabulary()` and pass
+    a counter or an iterator of the elements that the vocabulary will contain.
+
+    Vocabulary object usage: Assuming an initialized vocabulary `v`:
+
+       * To get the id of an element use `v.get_id_or_unk("element")`.
+       * To get the ids of a sequence, use `v.get_id_or_unk_multiple(..)`.
+       * To get the size of the vocabulary use `len(v)`
+       * To get the string representation for a given id use `v.get_name_for_id(the_id)`.
     """
 
     def __init__(self, add_unk: bool=True, add_pad: bool=False) -> None:
