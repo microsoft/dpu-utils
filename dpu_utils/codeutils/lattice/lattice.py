@@ -6,6 +6,8 @@ from typing import Iterable, List, Set, Optional, Union
 from dpu_utils.utils.dataloading import save_json_gz, load_json_gz
 from dpu_utils.mlutils import Vocabulary
 
+__all__ = ['Lattice', 'LatticeVocabulary']
+
 
 class Lattice:
     """Represents a lattice structure."""
@@ -15,7 +17,7 @@ class Lattice:
         self._element_to_id = {v: k for k, v in enumerate(self._elements)}
         self._parent_relations = [frozenset(parents) for parents in parent_relations]
 
-    def __contains__(self, element: str):
+    def __contains__(self, element: str) -> bool:
         return element in self._element_to_id
 
     @lru_cache(maxsize=1024)
@@ -51,7 +53,7 @@ class Lattice:
         data = dict(types=self._elements, outgoingEdges=[list(p) for p in self._parent_relations])
         save_json_gz(data, filename)
 
-    def merge(self, other_lattice) -> None:
+    def merge(self, other_lattice: 'Lattice') -> None:
         self._parent_relations = [set(parents) for parents in self._parent_relations]  # Temporarily convert to sets
         for element in other_lattice._elements:
             if element not in self._element_to_id:
@@ -130,7 +132,7 @@ class LatticeVocabulary(Vocabulary):
 
     @staticmethod
     def get_vocabulary_for(tokens: Union[Iterable[str], Counter], lattice: Lattice,
-                           count_threshold: int = 5, max_size: int=100000) -> 'LatticeVocabulary':
+                           count_threshold: int = 5, max_size: int = 100000) -> 'LatticeVocabulary':
         if type(tokens) is Counter:
             token_counter = tokens
         else:

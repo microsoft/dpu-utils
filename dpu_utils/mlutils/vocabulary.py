@@ -1,4 +1,5 @@
 from collections import Counter
+import typing
 from typing import Iterable, Dict, Sized, List, FrozenSet, Union, Optional
 
 import numpy as np
@@ -62,8 +63,8 @@ class Vocabulary(Sized):
         else:
             return self.token_to_id[self.get_unk()]
 
-    def get_id_or_unk_multiple(self, tokens: List[str], pad_to_size: Optional[int]=None,
-                               padding_element: int=0) -> List[int]:
+    def get_id_or_unk_multiple(self, tokens: List[str], pad_to_size: Optional[int] = None,
+                               padding_element: int = 0) -> List[int]:
         if pad_to_size is not None:
             tokens = tokens[:pad_to_size]
 
@@ -86,7 +87,7 @@ class Vocabulary(Sized):
     def get_all_names(self) -> FrozenSet[str]:
         return frozenset(self.token_to_id.keys())
 
-    def __batch_add_from_counter(self, token_counter: Counter, count_threshold: int, max_size:int) -> None:
+    def __batch_add_from_counter(self, token_counter: typing.Counter[str], count_threshold: int, max_size: int) -> None:
         """Update dictionary with elements of the token_counter"""
         for token, count in token_counter.most_common(max_size):
             if count >= count_threshold:
@@ -103,8 +104,8 @@ class Vocabulary(Sized):
         return '%PAD%'
 
     @staticmethod
-    def create_vocabulary(tokens: Union[Iterable[str], Counter], max_size: int,
-                          count_threshold: int=5, add_unk: bool=True, add_pad: bool=False) -> 'Vocabulary':
+    def create_vocabulary(tokens: Union[Iterable[str], typing.Counter[str]], max_size: int,
+                          count_threshold: int = 5, add_unk: bool = True, add_pad: bool = False) -> 'Vocabulary':
         if type(tokens) is Counter:
             token_counter = tokens
         else:
@@ -114,11 +115,11 @@ class Vocabulary(Sized):
         vocab.__batch_add_from_counter(token_counter, count_threshold, max_size - num_base_tokens)
         return vocab
 
-    def update(self, token_counter: Counter, max_size: int, count_threshold: int=5):
+    def update(self, token_counter: typing.Counter[str], max_size: int, count_threshold: int=5):
         assert len(self) < max_size, 'Dictionary is already larger than max_size.'
         self.__batch_add_from_counter(token_counter, count_threshold=count_threshold, max_size=max_size)
 
-    def get_empirical_distribution(self, elements: Iterable[str], dirichlet_alpha: float=10.) -> np.ndarray:
+    def get_empirical_distribution(self, elements: Iterable[str], dirichlet_alpha: float = 10.) -> np.ndarray:
         """Retrieve empirical distribution of elements."""
         targets = np.fromiter((self.get_id_or_unk(t) for t in elements), dtype=np.int)
         empirical_distribution = np.bincount(targets, minlength=len(self)).astype(float)

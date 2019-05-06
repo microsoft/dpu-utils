@@ -3,8 +3,7 @@ import sys
 import queue
 import threading
 import traceback
-from typing import TypeVar, Iterable, Iterator, List, Callable
-
+from typing import TypeVar, Iterable, Iterator, List, Callable, Optional
 
 T = TypeVar('T')
 
@@ -14,10 +13,10 @@ __all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator'
 class ThreadedIterator(Iterator[T]):
     """An iterator object that computes its elements in a single parallel thread to be ready to be consumed.
     The iterator should *not* return `None`. Elements of the original iterable will be shuffled arbitrarily."""
-    def __init__(self, original_iterator: Iterator[T], max_queue_size: int=2, enabled: bool=True):
+    def __init__(self, original_iterator: Iterator[T], max_queue_size: int = 2, enabled: bool = True):
         self.__is_enabled = enabled
         if enabled:
-            self.__queue = queue.Queue(maxsize=max_queue_size)
+            self.__queue = queue.Queue(maxsize=max_queue_size)  # type: queue.Queue[Optional[T]]
             self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator))
             self.__thread.start()
         else:

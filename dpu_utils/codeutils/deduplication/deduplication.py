@@ -1,4 +1,5 @@
 from collections import Counter, defaultdict
+import typing
 from typing import List, Dict, Set, TypeVar, Generic, Iterable, Tuple, Hashable, Optional, Callable
 import re
 import numpy as np
@@ -39,7 +40,7 @@ class DuplicateDetector(Generic[DocumentId]):
         self.__min_num_tokens_per_document = min_num_tokens_per_document
         self.__document_keys = []  # type: List[DocumentId]
         self.__document_key_set = set()  # type: Set[DocumentId]
-        self.__document_elements = []  # type: List[Counter[int]]
+        self.__document_elements = []  # type: List[typing.Counter[int]]
 
     def __get_token_id(self, token: str) -> int:
         token_id = self.__vocabulary.get(token)
@@ -81,7 +82,7 @@ class DuplicateDetector(Generic[DocumentId]):
 
         clone_sets = []  # type: List[Set[DocumentId]]
 
-        pairwise_relationships = defaultdict(list)
+        pairwise_relationships = defaultdict(list)  # type: Dict[int, List[int]]
         for idx1, idx2 in self.__duplicate_pairs():
             assert idx1 != idx2
             pairwise_relationships[idx1].append(idx2)

@@ -13,6 +13,7 @@ setuptools.setup(
       url='https://github.com/microsoft/dpu-utils',
       author='Deep Procedural Intelligence',
       packages=setuptools.find_packages(),
+      python_requires=">=3.6.1",
       include_package_data=True,
       install_requires=[
           'azure-storage', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch'
