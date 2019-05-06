@@ -21,7 +21,6 @@ enum
 event
 explicit
 extern
-false
 finally
 fixed
 float
@@ -62,7 +61,6 @@ struct
 switch
 this
 throw
-true
 try
 typeof
 uint
