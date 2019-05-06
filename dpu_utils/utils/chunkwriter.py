@@ -12,11 +12,12 @@ class ChunkWriter(Generic[T]):
     """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz, .json.gz or .jsonl.gz
     the appropriate format will be used for the chunks."""
     def __init__(self, out_folder: Union[RichPath, str], file_prefix: str, max_chunk_size: int, file_suffix: str,
-                 parallel_writers: int=0):
+                 parallel_writers: int = 0):
         self.__current_chunk = []  # type: List[T]
         if isinstance(out_folder, str):
-            out_folder = RichPath.create(out_folder)
-        self.__out_folder = out_folder
+            self.__out_folder = RichPath.create(out_folder)  # type: RichPath
+        else:
+            self.__out_folder = out_folder  # type: RichPath
         self.__out_folder.make_as_dir()
         self.__file_prefix = file_prefix
         self.__max_chunk_size = max_chunk_size

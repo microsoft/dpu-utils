@@ -23,7 +23,7 @@ class CharTensorizer:
         self.__ALPHABET_DICT['UNK'] = 1
 
     @property
-    def max_char_length(self)-> Optional[int]:
+    def max_char_length(self) -> Optional[int]:
         return self.__max_num_chars
 
     def num_chars_in_vocabulary(self)-> int:
@@ -38,7 +38,7 @@ class CharTensorizer:
     def get_word_from_ids(self, ids: np.ndarray)-> str:
         return ''.join(self.__ALPHABET[i] if i!=1 else '<UNK>' for i in ids)
 
-    def tensorize_str(self, input: str)-> np.ndarray:
+    def tensorize_str(self, input: str) -> np.ndarray:
         if self.__lower_case_all:
             input = input.lower()
 

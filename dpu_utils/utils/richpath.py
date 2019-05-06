@@ -233,6 +233,7 @@ class RichPath(ABC):
     def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
         pass
 
+
 class LocalPath(RichPath):
     def __init__(self, path: str):
         super().__init__(path)
@@ -256,7 +257,7 @@ class LocalPath(RichPath):
         os.makedirs(self.path, exist_ok=True)
 
     def relpath(self, base: 'LocalPath') -> str:
-        assert isinstance(base, LocalPath)
+        assert isinstance(base, LocalPath), 'base must also be a LocalPath'
         return os.path.relpath(self.path, base.path)
 
     def read_as_binary(self) -> bytes:
