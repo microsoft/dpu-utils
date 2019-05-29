@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, List, Iterable, TypeVar, Generic, Union
+from typing import List, Iterable, TypeVar, Generic, Union
 
 from dpu_utils.utils import RichPath
 
@@ -29,20 +29,20 @@ class ChunkWriter(Generic[T]):
         if self.__parallel_writers > 0:
             self.__writer_executors = ThreadPoolExecutor(max_workers=self.__parallel_writers)
 
-    def __write_if_needed(self)-> None:
+    def __write_if_needed(self) -> None:
         if len(self.__current_chunk) < self.__max_chunk_size:
             return
         self.__flush()
 
-    def add(self, element: T)-> None:
+    def add(self, element: T) -> None:
         self.__current_chunk.append(element)
         self.__write_if_needed()
 
-    def add_many(self, elements: Iterable[T])-> None:
+    def add_many(self, elements: Iterable[T]) -> None:
         for element in elements:
             self.add(element)
 
-    def __flush(self)-> None:
+    def __flush(self) -> None:
         if len(self.__current_chunk) == 0:
             return
         outfile = self.__out_folder.join(
@@ -55,13 +55,13 @@ class ChunkWriter(Generic[T]):
         self.__current_chunk = []
         self.__num_files_written += 1
 
-    def __enter__(self):
+    def __enter__(self) -> 'ChunkWriter':
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.close()
 
-    def close(self)-> None:
+    def close(self) -> None:
         self.__flush()
         if self.__parallel_writers > 0:
             self.__writer_executors.shutdown(wait=True)
