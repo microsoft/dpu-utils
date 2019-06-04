@@ -3,6 +3,16 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.2</LangVersion>
     <Platforms>AnyCPU;x64</Platforms>
+
+    <!-- NuGet information -->
+    <PackageId>MSRC.DPU.Utils</PackageId>
+    <Description>Utilities used by the Deep Program Understanding team</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageVersion>1.0.0-$(BUILD_BUILDNUMBER)</PackageVersion>
+    <Authors>Miltos Allamanis, Marc Brockschmidt</Authors>
+    <Company>Microsoft</Company>
+    <RepositoryUrl>https://github.com/Microsoft/dpu-utils/</RepositoryUrl>
+    <Copyright>Copyright (c) 2018- Microsoft Corporation</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,4 +36,5 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutputPath>bin\Release</OutputPath>
   </PropertyGroup>
+
 </Project>

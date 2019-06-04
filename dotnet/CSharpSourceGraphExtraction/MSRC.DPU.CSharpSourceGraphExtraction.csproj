@@ -1,9 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.2</LangVersion>
     <Platforms>AnyCPU;x64</Platforms>
+
+    <!-- NuGet information -->
+    <PackageId>MSRC.DPU.CSharpSourceGraphExtraction</PackageId>
+    <Description>Source Graph extraction from C# programs</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageVersion>1.0.0-$(BUILD_BUILDNUMBER)</PackageVersion>
+    <Authors>Miltos Allamanis, Marc Brockschmidt</Authors>
+    <Company>Microsoft</Company>
+    <RepositoryUrl>https://github.com/Microsoft/dpu-utils/</RepositoryUrl>
+    <Copyright>Copyright (c) 2018- Microsoft Corporation</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -28,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Utils\Microsoft.Research.DPU.Utils.csproj" />
+    <ProjectReference Include="..\Utils\MSRC.DPU.Utils.csproj" />
   </ItemGroup>
 
 </Project>
