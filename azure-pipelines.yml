@@ -52,11 +52,12 @@ jobs:
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish artifact: dist'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     inputs:
       pathtoPublish: 'python/'
       artifactName: 'dist'
 
-- job: 'DotNet_Publish'
+- job: 'DotNet_Build'
   pool:
     vmImage: 'Ubuntu 16.04'
 
@@ -82,10 +83,17 @@ jobs:
   #    projects: 'dotnet/**/*Tests/*.csproj'
   #    arguments: '--configuration $(buildConfiguration)'
 
+- job: 'DotNet_Publish'
+  dependsOn: 'DotNet_Build'
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  steps:
   - script: dotnet pack
     workingDirectory: 'dotnet/'
 
   - task: NuGetCommand@2
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     inputs:
       command: push
       nuGetFeedType: external
