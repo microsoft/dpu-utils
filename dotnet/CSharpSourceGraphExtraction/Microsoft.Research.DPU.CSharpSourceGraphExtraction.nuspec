@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+    <metadata>
+        <id>Microsoft.Research.DPU.Utils</id>
+        <version>1.0.0</version>
+        <authors>Miltos Allamanis, Marc Brockschmidt</authors>
+        <owners>mabrocks</owners>
+        <projectUrl>https://github.com/Microsoft/dpu-utils/</projectUrl>
+        <license type="expression">MIT</license>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <releaseNotes>Initial release.</releaseNotes>
+        <description>Utilities used by the Deep Program Understanding team</description>
+        <copyright>Copyright ©207- Microsoft Corporation</copyright>
+    </metadata>
+
+    <files>
+        <!-- A READMEto display when the package is installed -->
+        <!-- <file src="readme.txt" target="" /> -->
+    </files>
+</package>

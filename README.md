@@ -74,6 +74,16 @@ coverage run --source dpu_utils/ setup.py test && \
 
 The resulting HTML file will be in `htmlcov/index.html`.
 
+## .NET
+
+Stored in the `dotnet` subdirectory.
+
+Generic Utilities:
+* `Microsoft.Research.DPU.Utils.RichPath`: a convenient way of using both paths and Azure paths in your code.
+
+Code-related Utilities:
+* `Microsoft.Research.DPU.CSharpSourceGraphExtraction`: infrastructure to extract Program Graphs from C# projects.
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
