@@ -58,11 +58,17 @@ namespace MSRC.DPU.Utils
                 }
                 else
                 {
-                    var collection = data as System.Collections.ICollection;
-                    foreach (var ele in collection)
+                    if (data is System.Collections.ICollection collection)
                     {
-                        serializer.Serialize(textWriter, ele);
-                        textWriter.WriteLine();
+                        foreach (var ele in collection)
+                        {
+                            serializer.Serialize(textWriter, ele);
+                            textWriter.WriteLine();
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"Only data implementing the ICollection interface can be serialized as JSONL. Provided data has type {data.GetType()}.");
                     }
                 }
             }
@@ -194,7 +200,7 @@ namespace MSRC.DPU.Utils
 
         public override IEnumerable<RichPath> FilesInDirectory(string searchPattern = "*")
         {
-            foreach (var newPath in Directory.EnumerateFiles(Path, searchPattern))
+            foreach (var newPath in Directory.EnumerateFiles(Path, searchPattern, SearchOption.AllDirectories))
             {
                 yield return new LocalPath(newPath);
             }
@@ -351,15 +357,14 @@ namespace MSRC.DPU.Utils
                 containerName,
                 Path.Replace('/', System.IO.Path.DirectorySeparatorChar) // Note that this translates a blob path (/ separators) to a local path (potentially using \)
                 );
+        private string CachedFileEtagPath => CachedFilePath + ".etag";
 
         private LocalPath CacheFileLocally()
         {
-            var etagPath = CachedFilePath + ".etag";
-
             string storedEtag = null;
-            if (File.Exists(etagPath))
+            if (File.Exists(CachedFileEtagPath))
             {
-                storedEtag = File.ReadAllText(etagPath);
+                storedEtag = File.ReadAllText(CachedFileEtagPath);
             }
 
             var tmpPath = CachedFilePath + Guid.NewGuid();
@@ -377,7 +382,7 @@ namespace MSRC.DPU.Utils
                     File.Delete(CachedFilePath);
                 }
                 File.Move(tmpPath, CachedFilePath);
-                File.WriteAllText(etagPath, blobReference.Properties.ETag);
+                File.WriteAllText(CachedFileEtagPath, blobReference.Properties.ETag);
             }
             catch (StorageException e)
             {
@@ -418,6 +423,18 @@ namespace MSRC.DPU.Utils
                 tempLocalPath.Store(data);
                 var blobReference = blobContainerClient.GetBlockBlobReference(Path);
                 blobReference.UploadFromFile(tempFile);
+
+                // Also store to local cache, if we have one:
+                if (cacheLocation != null)
+                {
+                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(CachedFilePath));
+                    if (File.Exists(CachedFilePath))
+                    {
+                        File.Delete(CachedFilePath);
+                    }
+                    File.Move(tempFile, CachedFilePath);
+                    File.WriteAllText(CachedFileEtagPath, blobReference.Properties.ETag);
+                }
             }
             finally
             {
