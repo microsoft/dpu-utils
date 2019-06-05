@@ -23,10 +23,7 @@ namespace MSRC.DPU.Utils
                 {
                     throw new ArgumentException($"Azure path {path} requires azure authentification info.");
                 }
-
-                // Strip off azure:// prefix:
-                var accountPath = path.Substring(AZURE_PATH_PREFIX.Length);
-                return new AzurePath(azureInfoPath, accountPath);
+                return new AzurePath(azureInfoPath, path);
             }
             else
             {
@@ -215,9 +212,21 @@ namespace MSRC.DPU.Utils
         private readonly string cacheLocation;
         private readonly CloudBlobContainer blobContainerClient;
 
-        public AzurePath(string azureInfoPath, string accountPath)
+        public AzurePath(string azureInfoPath, string path)
         {
+            if (!path.StartsWith(AZURE_PATH_PREFIX))
+            {
+                throw new ArgumentException($"Azure paths need to be in the format {AZURE_PATH_PREFIX}/account_name/container_name/path, but got {path}.");
+            }
+
+            // Strip off azure:// prefix:
+            var accountPath = path.Substring(AZURE_PATH_PREFIX.Length);
             var pathParts = accountPath.Split(new char[] { '/' }, 3);
+
+            if (pathParts.Length < 3)
+            {
+                throw new ArgumentException($"Azure paths need to be in the format {AZURE_PATH_PREFIX}/account_name/container_name/path, but got {path}.");
+            }
             var (accountName, containerName, containerPath) = (pathParts[0], pathParts[1], pathParts[2]);
 
             using (var azureInfoInstream = File.OpenText(azureInfoPath))
