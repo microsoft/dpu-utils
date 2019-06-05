@@ -3,12 +3,17 @@
 
 This contains a set of utilities used across projects of the [DPU team](https://www.microsoft.com/en-us/research/project/program/).
 
+## Python
 
-## Installation
+Stored in the `python` subdirectory, published as the `dpu-utils` package.
 
-`pip install dpu-utils`
+### Installation
 
-## Overview of Utilities:
+```bash
+pip install dpu-utils
+```
+
+### Overview of Utilities:
 
 Generic Utilities:
 * `dpu_utils.utils.RichPath` a convenient way of using both paths and Azure paths in your code.
@@ -38,12 +43,12 @@ Code-related Utilities
 * `dpu_utils.codeutils.get_language_keywords()` that retrieves the keyword tokens for many programming languages.
 * `dpu_utils.codeutils.deduplication.DuplicateDetector` that detects duplicates in codebases.
 
-## Command-line tools
+### Command-line tools
 
-##### Approximate Duplicate Code Detection
+#### Approximate Duplicate Code Detection
 You can use the `deduplicationcli` command to detect duplicates in pre-processed source code, by invoking
 ```bash
- $ deduplicationcli DATA_PATH OUT_JSON
+deduplicationcli DATA_PATH OUT_JSON
 ```
 where `DATA_PATH` is a file containing tokenized `.jsonl.gz` files and `OUT_JSON` is the target output file.
 For more options look at `--help`.
@@ -51,15 +56,15 @@ For more options look at `--help`.
 An exact (but usually slower) version of this can be found [here](https://github.com/Microsoft/near-duplicate-code-detector)
 along with code to tokenize Java, C#, Python and JavaScript into the relevant formats.
 
-## Tests
+### Tests
 
-### Run the unit tests
+#### Run the unit tests
 
 ```bash
 python setup.py test
 ```
 
-### Generate code coverage reports
+#### Generate code coverage reports
 
 ```bash
 # pip install coverage
@@ -68,6 +73,16 @@ coverage run --source dpu_utils/ setup.py test && \
 ```
 
 The resulting HTML file will be in `htmlcov/index.html`.
+
+## .NET
+
+Stored in the `dotnet` subdirectory.
+
+Generic Utilities:
+* `Microsoft.Research.DPU.Utils.RichPath`: a convenient way of using both paths and Azure paths in your code.
+
+Code-related Utilities:
+* `Microsoft.Research.DPU.CSharpSourceGraphExtraction`: infrastructure to extract Program Graphs from C# projects.
 
 # Contributing
 

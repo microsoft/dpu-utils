@@ -1,11 +1,6 @@
-# Python package
-# Create and test a Python package on multiple Python versions.
-# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/python
-
 jobs:
 
-- job: 'Test'
+- job: 'Python_Test'
   pool:
     vmImage: 'Ubuntu 16.04'
   strategy:
@@ -26,20 +21,22 @@ jobs:
 
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt
     displayName: 'Install dependencies'
+    workingDirectory: 'python/'
 
   - script: |
       pip install pytest
       pytest tests --doctest-modules --junitxml=junit/test-results.xml
     displayName: 'pytest'
+    workingDirectory: 'python/'
 
   - task: PublishTestResults@2
     inputs:
-      testResultsFiles: '**/test-results.xml'
+      testResultsFiles: 'python/**/test-results.xml'
       testRunTitle: 'Python $(python.version)'
     condition: succeededOrFailed()
 
-- job: 'Publish'
-  dependsOn: 'Test'
+- job: 'Python_Publish'
+  dependsOn: 'Python_Test'
   pool:
     vmImage: 'Ubuntu 16.04'
 
@@ -51,9 +48,54 @@ jobs:
 
   - script: python setup.py sdist
     displayName: 'Build sdist'
+    workingDirectory: 'python/'
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish artifact: dist'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     inputs:
-      pathtoPublish: '.'
+      pathtoPublish: 'python/'
       artifactName: 'dist'
+
+- job: 'DotNet_Build'
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  steps:
+  - task: DotNetCoreInstaller@0
+    inputs:
+      version: '2.1.300'
+
+  - script: dotnet restore
+    workingDirectory: 'dotnet/'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build
+    inputs:
+      command: build
+      projects: 'dotnet/**/*.csproj'
+      arguments: '--configuration Release'
+
+  # One of these days, we should add tests:
+  #- task: DotNetCoreCLI@2
+  #  inputs:
+  #    command: test
+  #    projects: 'dotnet/**/*Tests/*.csproj'
+  #    arguments: '--configuration $(buildConfiguration)'
+
+- job: 'DotNet_Publish'
+  dependsOn: 'DotNet_Build'
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  steps:
+  - script: dotnet pack
+    workingDirectory: 'dotnet/'
+
+  - task: NuGetCommand@2
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    inputs:
+      command: push
+      nuGetFeedType: external
+      publishFeedCredentials: 'mabrocks-DPU.Utils-NuGet'
+      packagesToPush: 'dotnet/**/*.nupkg'
