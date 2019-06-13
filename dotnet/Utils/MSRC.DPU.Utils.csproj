@@ -8,7 +8,7 @@
     <PackageId>MSRC.DPU.Utils</PackageId>
     <Description>Utilities used by the Deep Program Understanding team</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageVersion>1.0.2-0$(BUILD_BUILDID)</PackageVersion>
+    <PackageVersion>1.0.2-0$(BUILD_SOURCEVERSION)</PackageVersion>
     <Authors>Miltos Allamanis, Marc Brockschmidt</Authors>
     <Company>Microsoft</Company>
     <RepositoryUrl>https://github.com/Microsoft/dpu-utils/</RepositoryUrl>
