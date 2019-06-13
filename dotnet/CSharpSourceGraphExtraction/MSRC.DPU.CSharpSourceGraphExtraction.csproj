@@ -8,7 +8,7 @@
     <PackageId>MSRC.DPU.CSharpSourceGraphExtraction</PackageId>
     <Description>Source Graph extraction from C# programs</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageVersion>1.0.0-000$(BUILD_BUILDNUMBER)</PackageVersion>
+    <PackageVersion>1.0.0-0$(BUILD_BUILDNUMBER)</PackageVersion>
     <Authors>Miltos Allamanis, Marc Brockschmidt</Authors>
     <Company>Microsoft</Company>
     <RepositoryUrl>https://github.com/Microsoft/dpu-utils/</RepositoryUrl>
