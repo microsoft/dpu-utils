@@ -9,8 +9,24 @@ __all__ = ['ChunkWriter']
 
 
 class ChunkWriter(Generic[T]):
-    """Encapsulates writing output into chunks. By setting the file_suffix to either .pkl.gz, .json.gz or .jsonl.gz
-    the appropriate format will be used for the chunks."""
+    """Encapsulates writing output into chunks (multiple consecutive files).
+
+    By setting the file_suffix to either .pkl.gz, .json.gz or .jsonl.gz
+    the appropriate format will be used for the chunks.
+
+    ChunkWriter can be used either in a context manager, ie
+     ```
+       with ChunkWriter(...) as writer:
+           writer.add(...)
+     ```
+
+    or by explicitly invoking `close()`, ie
+    ```
+       writer = ChunkWriter(...)
+       # Code that uses add() or add_many()
+       writer.close()
+    ```
+    """
     def __init__(self, out_folder: Union[RichPath, str], file_prefix: str, max_chunk_size: int, file_suffix: str,
                  parallel_writers: int = 0):
         self.__current_chunk = []  # type: List[T]
