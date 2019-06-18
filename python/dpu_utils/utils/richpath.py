@@ -18,6 +18,7 @@ from collections import OrderedDict
 from functools import total_ordering
 from typing import Any, List, Optional, Iterable, Callable
 
+import numpy
 from azure.storage.blob import BlockBlobService
 from azure.common import AzureHttpError
 
@@ -172,13 +173,19 @@ class RichPath(ABC):
     def read_as_pickle(self) -> Any:
         pass
 
+    @abstractmethod
+    def read_as_numpy(self) -> Any:
+        pass
+
     def read_by_file_suffix(self) -> Any:
         if self.path.endswith('.json.gz') or self.path.endswith('.json'):
             return self.read_as_json()
-        elif self.path.endswith('.jsonl.gz') or self.path.endswith('.jsonl'):
+        if self.path.endswith('.jsonl.gz') or self.path.endswith('.jsonl'):
             return self.read_as_jsonl()
         if self.path.endswith('.pkl.gz') or self.path.endswith('.pkl'):
             return self.read_as_pickle()
+        if self.path.endswith('.npy') or self.path.endswith('.npz'):
+            return self.read_as_numpy()
         raise ValueError('File suffix must be .json, .json.gz, .pkl or .pkl.gz: %s' % self.path)
 
     def get_filtered_files_in_dir(self, file_pattern: str) -> List['RichPath']:
@@ -275,6 +282,10 @@ class LocalPath(RichPath):
         else:
             with open(self.path, 'rb') as f:
                 return pickle.load(f)
+
+    def read_as_numpy(self) -> Any:
+        with open(self.path, 'rb') as f:
+            return numpy.load(f)
 
     @staticmethod
     def __is_gzipped(filename: str) -> bool:
@@ -429,6 +440,22 @@ class AzurePath(RichPath):
             os.unlink(cached_file_path.path)
             cached_file_path = self.__cache_file_locally()
             data = cached_file_path.read_as_pickle()
+        return data
+
+    def read_as_numpy(self) -> Any:
+        if self.__cache_location is None:
+            return numpy.load(self.read_as_binary())
+
+        # This makes sure that we do not use a memory stream to store the temporary data:
+        cached_file_path = self.__cache_file_locally()
+        # We sometimes have a corrupted cache (if the process was killed while writing)
+        try:
+            data = cached_file_path.read_as_numpy()
+        except EOFError:
+            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            os.unlink(cached_file_path.path)
+            cached_file_path = self.__cache_file_locally()
+            data = cached_file_path.read_as_numpy()
         return data
 
     def save_as_compressed_file(self, data: Any):
