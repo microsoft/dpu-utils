@@ -8,7 +8,8 @@
     <PackageId>MSRC.DPU.Utils</PackageId>
     <Description>Utilities used by the Deep Program Understanding team</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageVersion>1.0.2-0$(BUILD_SOURCEVERSION)</PackageVersion>
+    <BUILD_BUILDNUMBER Condition="'$(BUILD_BUILDNUMBER)' == ''">local</BUILD_BUILDNUMBER>
+    <PackageVersion>1.0.2-$(BUILD_BUILDNUMBER)</PackageVersion>
     <Authors>Miltos Allamanis, Marc Brockschmidt</Authors>
     <Company>Microsoft</Company>
     <RepositoryUrl>https://github.com/Microsoft/dpu-utils/</RepositoryUrl>
