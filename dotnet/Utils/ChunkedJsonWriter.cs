@@ -47,6 +47,10 @@ namespace MSRC.DPU.Utils
 
         public int NumChunksWrittenSoFar { get; private set; } = 0;
 
+        /// <summary>
+        /// Write JSON representation of a single datapoint to the output. The method handles details of chunking.
+        /// </summary>
+        /// <param name="jsonElement">String containing a JSON-encoded data point.</param>
         public void WriteElement(string jsonElement)
         {
             lock (_lock)
@@ -83,6 +87,10 @@ namespace MSRC.DPU.Utils
             }
         }
 
+        /// <summary>
+        /// Write JSON representation of a single datapoint to the output. The method handles details of chunking.
+        /// </summary>
+        /// <param name="writer">A callback that writes some data to the provided JsonWriter, for example your hand-rolled serialization code.</param>
         public void WriteElement(Action<JsonWriter> writer)
         {
             string jsonElement;
