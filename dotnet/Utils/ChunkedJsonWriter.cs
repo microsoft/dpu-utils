@@ -47,8 +47,53 @@ namespace MSRC.DPU.Utils
 
         public int NumChunksWrittenSoFar { get; private set; } = 0;
 
+        /// <summary>
+        /// Write JSON representation of a single datapoint to the output. The method handles details of chunking.
+        /// </summary>
+        /// <param name="jsonElement">String containing a JSON-encoded data point.</param>
+        public void WriteElement(string jsonElement)
+        {
+            lock (_lock)
+            {
+                if (_textStream == null)
+                {
+                    var filename = GetChunkedOutputFilename(_outputFilenameTemplate, NumChunksWrittenSoFar);
+                    Console.WriteLine($"Opening output file {filename}.");
+                    var fileStream = File.Create(filename);
+                    var gzipStream = new GZipStream(fileStream, CompressionMode.Compress, false);
+                    _textStream = new StreamWriter(gzipStream);
+                    _numElementsWrittenInCurrentChunk = 0;
+                    if (!_useJsonlFormat) _textStream.Write('[');
+                }
+
+                if (_numElementsWrittenInCurrentChunk > 0)
+                {
+                    if (_useJsonlFormat)
+                    {
+                        _textStream.Write('\n');
+                    }
+                    else
+                    {
+                        _textStream.Write(',');
+                    }
+                }
+                _textStream.Write(jsonElement);
+
+                ++_numElementsWrittenInCurrentChunk;
+                if (_numElementsWrittenInCurrentChunk >= _max_elements_per_chunk)
+                {
+                    CloseOutputFile();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Write JSON representation of a single datapoint to the output. The method handles details of chunking.
+        /// </summary>
+        /// <param name="writer">A callback that writes some data to the provided JsonWriter, for example your hand-rolled serialization code.</param>
         public void WriteElement(Action<JsonWriter> writer)
         {
+            string jsonElement;
             using (MemoryStream ms = new MemoryStream())
             {
                 TextWriter tw = new StreamWriter(ms);
@@ -60,40 +105,10 @@ namespace MSRC.DPU.Utils
 
                 using (TextReader sr = new StreamReader(ms))
                 {
-                    lock (_lock)
-                    {
-                        if (_textStream == null)
-                        {
-                            var filename = GetChunkedOutputFilename(_outputFilenameTemplate, NumChunksWrittenSoFar);
-                            Console.WriteLine($"Opening output file {filename}.");
-                            var fileStream = File.Create(filename);
-                            var gzipStream = new GZipStream(fileStream, CompressionMode.Compress, false);
-                            _textStream = new StreamWriter(gzipStream);
-                            _numElementsWrittenInCurrentChunk = 0;
-                            if (!_useJsonlFormat) _textStream.Write('[');
-                        }
-
-                        if (_numElementsWrittenInCurrentChunk > 0)
-                        {
-                            if (_useJsonlFormat)
-                            {
-                                _textStream.Write('\n');
-                            }
-                            else
-                            {
-                                _textStream.Write(',');
-                            }
-                        }
-                        var json = sr.ReadToEnd();
-                        _textStream.Write(json);
-
-                        ++_numElementsWrittenInCurrentChunk;
-                        if (_numElementsWrittenInCurrentChunk >= _max_elements_per_chunk)
-                        {
-                            CloseOutputFile();
-                        }
-                    }
+                    jsonElement = sr.ReadToEnd();
                 }
+
+                WriteElement(jsonElement);
             }
         }
 
