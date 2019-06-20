@@ -54,7 +54,7 @@ jobs:
     displayName: 'Publish artifact: dist'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     inputs:
-      pathtoPublish: 'python/'
+      pathtoPublish: './'
       artifactName: 'dist'
 
 - job: 'DotNet_Build'
