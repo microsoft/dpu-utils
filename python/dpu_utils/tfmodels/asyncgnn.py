@@ -3,6 +3,8 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 
+from python.dpu_utils.tfutils import get_activation
+
 
 class AsyncGGNN(object):
     @classmethod
@@ -37,12 +39,7 @@ class AsyncGGNN(object):
 
     def __make_parameters(self):
         activation_name = self.hyperparams['graph_rnn_activation'].lower()
-        if activation_name == 'tanh':
-            activation_fun = tf.nn.tanh
-        elif activation_name == 'relu':
-            activation_fun = tf.nn.relu
-        else:
-            raise Exception("Unknown activation function type '%s'." % activation_name)
+        activation_fun = get_activation(activation_name)
 
         h_dim = self.hyperparams['hidden_size']
         e_dim = self.hyperparams['edge_label_size']

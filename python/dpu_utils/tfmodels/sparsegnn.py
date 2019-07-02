@@ -5,6 +5,8 @@ import tensorflow as tf
 
 from dpu_utils.tfutils import unsorted_segment_log_softmax
 
+from python.dpu_utils.tfutils import get_activation
+
 SMALL_NUMBER = 1e-7
 
 
@@ -84,12 +86,8 @@ class SparseGGNN:
 
     def __create_rnn_cell(self, h_dim: int):
         activation_name = self.params['graph_rnn_activation'].lower()
-        if activation_name == 'tanh':
-            activation_fun = tf.nn.tanh
-        elif activation_name == 'relu':
-            activation_fun = tf.nn.relu
-        else:
-            raise Exception("Unknown activation function type '%s'." % activation_name)
+        activation_fun = get_activation(activation_name)
+
         cell_type = self.params['graph_rnn_cell'].lower()
         if cell_type == 'gru':
             cell = tf.nn.rnn_cell.GRUCell(h_dim, activation=activation_fun)
@@ -173,7 +171,7 @@ class SparseGGNN:
                                 edge_source_states = tf.nn.embedding_lookup(params=node_states_per_layer[-1],
                                                                             ids=edge_sources)  # Shape [E, D]
                                 edge_weights = tf.nn.dropout(self.__weights.edge_weights[layer_idx][weights_edge_type_idx],
-                                                             keep_prob=dropout_keep_rate)
+                                                             rate=1-dropout_keep_rate)
                                 all_messages_for_edge_type = tf.matmul(edge_source_states, edge_weights)  # Shape [E, D]
 
                                 if data_edge_type_idx in edge_features:
