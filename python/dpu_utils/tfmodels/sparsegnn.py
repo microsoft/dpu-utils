@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from dpu_utils.tfutils import unsorted_segment_log_softmax
 
-from python.dpu_utils.tfutils import get_activation
+from dpu_utils.tfutils import get_activation
 
 SMALL_NUMBER = 1e-7
 

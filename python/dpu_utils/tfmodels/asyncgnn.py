@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 
-from python.dpu_utils.tfutils import get_activation
+from dpu_utils.tfutils import get_activation
 
 
 class AsyncGGNN(object):
