@@ -1,3 +1,5 @@
+import re
+from os import listdir
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Iterable, TypeVar, Generic, Union
 
@@ -28,7 +30,7 @@ class ChunkWriter(Generic[T]):
     ```
     """
     def __init__(self, out_folder: Union[RichPath, str], file_prefix: str, max_chunk_size: int, file_suffix: str,
-                 parallel_writers: int = 0):
+                 parallel_writers: int = 0, mode: str = 'w'):
         self.__current_chunk = []  # type: List[T]
         if isinstance(out_folder, str):
             self.__out_folder = RichPath.create(out_folder)  # type: RichPath
@@ -39,7 +41,13 @@ class ChunkWriter(Generic[T]):
         self.__max_chunk_size = max_chunk_size
         self.__file_suffix = file_suffix
 
-        self.__num_files_written = 0  # type: int
+        self.__mode = mode.lower()
+        assert self.__mode == 'a' or self.__mode == 'w', 'Mode must be either append (a) or write (w). Given: {0}'.format(mode)
+
+        if self.__mode == 'w':
+            self.__num_files_written = 0  # 'w' mode will begin writing from scratch
+        else:
+            self.__num_files_written = self.__get_max_existing_index() + 1  # 'a' mode starts after the last-written file
 
         self.__parallel_writers = parallel_writers
         if self.__parallel_writers > 0:
@@ -81,3 +89,17 @@ class ChunkWriter(Generic[T]):
         self.__flush()
         if self.__parallel_writers > 0:
             self.__writer_executors.shutdown(wait=True)
+
+    def __get_max_existing_index(self):
+        """
+        Returns the largest file index within the current output folder.
+        """
+        file_regex = re.compile(f'{self.__file_prefix}([0-9]+){self.__file_suffix}')
+        max_index = 0
+        for file_name in listdir(self.__out_folder.path):
+            match = file_regex.match(file_name)
+            if match is None:
+                continue
+            file_index = int(match.group(1))
+            max_index = max(file_index, max_index)
+        return max_index
