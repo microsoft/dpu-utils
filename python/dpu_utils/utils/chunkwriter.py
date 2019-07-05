@@ -42,7 +42,7 @@ class ChunkWriter(Generic[T]):
         self.__file_suffix = file_suffix
 
         self.__mode = mode.lower()
-        assert self.__mode == 'a' or self.__mode == 'w', 'Mode must be either append (a) or write (w). Given: {0}'.format(mode)
+        assert self.__mode in ('a', 'w'), 'Mode must be either append (a) or write (w). Given: {0}'.format(mode)
 
         if self.__mode == 'w':
             self.__num_files_written = 0  # 'w' mode will begin writing from scratch
@@ -90,14 +90,16 @@ class ChunkWriter(Generic[T]):
         if self.__parallel_writers > 0:
             self.__writer_executors.shutdown(wait=True)
 
-    def __get_max_existing_index(self):
+    def __get_max_existing_index(self) -> int:
         """
         Returns the largest file index within the current output folder.
         """
-        file_regex = re.compile(f'{self.__file_prefix}([0-9]+){self.__file_suffix}')
+        file_pattern = '{0}*{1}'.format(self.__file_prefix, self.__file_suffix)
+        file_regex = re.compile('.*{0}([0-9]+){1}'.format(self.__file_prefix, self.__file_suffix))
+
         max_index = 0
-        for file_name in listdir(self.__out_folder.path):
-            match = file_regex.match(file_name)
+        for path in self.__out_folder.iterate_filtered_files_in_dir(file_pattern):
+            match = file_regex.match(path.path)
             if match is None:
                 continue
             file_index = int(match.group(1))
