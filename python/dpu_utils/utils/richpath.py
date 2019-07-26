@@ -482,6 +482,22 @@ class AzurePath(RichPath):
             data = cached_file_path.read_as_numpy()
         return data
 
+    def read_by_file_suffix(self) -> Any:
+        # If we aren't caching, use the default implementation that redirects to specialised methods:
+        if self.__cache_location is None:
+            return super().read_by_file_suffix()
+
+        # This makes sure that we do not use a memory stream to store the temporary data:
+        cached_file_path = self.__cache_file_locally()
+        # We sometimes have a corrupted cache (if the process was killed while writing)
+        try:
+            return cached_file_path.read_by_file_suffix()
+        except EOFError:
+            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            os.unlink(cached_file_path.path)
+            cached_file_path = self.__cache_file_locally()
+            return cached_file_path.read_by_file_suffix()
+
     def save_as_compressed_file(self, data: Any):
         # TODO: Python does not have a built-in "compress stream" functionality in its standard lib
         # Thus, we just write out to a file and upload, but of course, this should be better...
