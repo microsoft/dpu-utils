@@ -275,6 +275,30 @@ class LocalPath(RichPath):
             with open(self.path, 'rb') as f:
                 return f.read()
 
+    def read_as_jsonl(self, error_handling: Optional[Callable[[str, Exception], None]]=None) -> Iterable[Any]:
+        """
+        Parse JSONL files. See http://jsonlines.org/ for more.
+
+        :param error_handling: a callable that receives the original line and the exception object and takes
+                over how parse error handling should happen.
+        :return: a iterator of the parsed objects of each line.
+        """
+        if self.__is_gzipped(self.path):
+            fh = gzip.open(self.path, mode='rt', encoding='utf-8')
+        else:
+            fh = open(self.path, 'rb', encoding='utf-8')
+        try:
+            for line in fh:
+                try:
+                    yield json.loads(line, object_pairs_hook=OrderedDict)
+                except Exception as e:
+                    if error_handling is None:
+                        raise
+                    else:
+                        error_handling(line, e)
+        finally:
+            fh.close()
+
     def read_as_pickle(self) -> Any:
         if self.__is_gzipped(self.path):
             with gzip.open(self.path) as f:
