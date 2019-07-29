@@ -275,6 +275,30 @@ class LocalPath(RichPath):
             with open(self.path, 'rb') as f:
                 return f.read()
 
+    def read_as_jsonl(self, error_handling: Optional[Callable[[str, Exception], None]]=None) -> Iterable[Any]:
+        """
+        Parse JSONL files. See http://jsonlines.org/ for more.
+
+        :param error_handling: a callable that receives the original line and the exception object and takes
+                over how parse error handling should happen.
+        :return: a iterator of the parsed objects of each line.
+        """
+        if self.__is_gzipped(self.path):
+            fh = gzip.open(self.path, mode='rt', encoding='utf-8')
+        else:
+            fh = open(self.path, 'rb', encoding='utf-8')
+        try:
+            for line in fh:
+                try:
+                    yield json.loads(line, object_pairs_hook=OrderedDict)
+                except Exception as e:
+                    if error_handling is None:
+                        raise
+                    else:
+                        error_handling(line, e)
+        finally:
+            fh.close()
+
     def read_as_pickle(self) -> Any:
         if self.__is_gzipped(self.path):
             with gzip.open(self.path) as f:
@@ -457,6 +481,22 @@ class AzurePath(RichPath):
             cached_file_path = self.__cache_file_locally()
             data = cached_file_path.read_as_numpy()
         return data
+
+    def read_by_file_suffix(self) -> Any:
+        # If we aren't caching, use the default implementation that redirects to specialised methods:
+        if self.__cache_location is None:
+            return super().read_by_file_suffix()
+
+        # This makes sure that we do not use a memory stream to store the temporary data:
+        cached_file_path = self.__cache_file_locally()
+        # We sometimes have a corrupted cache (if the process was killed while writing)
+        try:
+            return cached_file_path.read_by_file_suffix()
+        except EOFError:
+            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            os.unlink(cached_file_path.path)
+            cached_file_path = self.__cache_file_locally()
+            return cached_file_path.read_by_file_suffix()
 
     def save_as_compressed_file(self, data: Any):
         # TODO: Python does not have a built-in "compress stream" functionality in its standard lib
