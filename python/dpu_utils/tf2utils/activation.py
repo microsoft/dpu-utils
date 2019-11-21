@@ -1,11 +1,11 @@
 """Custom activation functions."""
-from typing import Optional
+from typing import Optional, Callable
 import math as m
 
 import tensorflow as tf
 
 
-def gelu(input_tensor: tf.Tensor):
+def gelu(input_tensor: tf.Tensor) -> tf.Tensor:
     """An approximation to the GELU activation function as used in the paper
     https://arxiv.org/pdf/1810.04805.pdf
     """
@@ -18,7 +18,9 @@ def gelu(input_tensor: tf.Tensor):
     return input_tensor * cdf
 
 
-def get_activation_function_by_name(activation_fn_name: Optional[str]):
+def get_activation_function_by_name(
+    activation_fn_name: Optional[str],
+) -> Callable[[tf.Tensor], tf.Tensor]:
     """Convert from an activation function name to the function itself."""
     if activation_fn_name is None:
         return None
