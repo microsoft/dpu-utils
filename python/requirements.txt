@@ -3,3 +3,4 @@ tqdm
 docopt
 azure-storage
 numpy
+sentencepiece
