@@ -364,11 +364,5 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
 
     def num_parameters(self) -> int:
         """Compute the number of trainable parameters in this component and its children."""
-        total_num_parameters = 0
-        for param in self.parameters(recurse=True):
-            t = 1
-            for k in param.size():
-                t *= k
-            total_num_parameters += t
-        return total_num_parameters
+        return sum(param.numel() for param in self.parameters(recurse=True) if param.requires_grad)
     # endregion
