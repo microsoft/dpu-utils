@@ -191,7 +191,7 @@ class DoubleBufferedIterator(Iterator[T]):
         return next_element
 
 
-def shuffled_iterator(input: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
+def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
     """
     Accept an iterator and return an approximate streaming (and memory efficient) shuffled iterator.
 
@@ -203,7 +203,7 @@ def shuffled_iterator(input: Iterator[T], buffer_size: int = 10000, out_slice_si
     assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
 
     buffer = []  # type: List[T]
-    for element in input:
+    for element in input_iterator:
         if len(buffer) < buffer_size:
             buffer.append(element)
         else:
