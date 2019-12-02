@@ -1,6 +1,7 @@
 import gzip
 import os
 from abc import abstractmethod, ABC
+from itertools import islice
 from tempfile import TemporaryDirectory
 from typing import Any, Dict, Optional, Tuple, Iterator, TypeVar, Generic
 
@@ -248,7 +249,8 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
     @abstractmethod
     def extend_minibatch_by_sample(self, datapoint: TensorizedData, accumulated_minibatch_data: Dict[str, Any]) -> bool:
         """
-        Add a datapoint to the minibatch.
+        Add a datapoint to the minibatch. If for some component-related reason the minibatch cannot accumulate
+            additional samples, this function should return False.
 
         :param datapoint: the datapoint to be added. This is a what `load_data_from_sample` returns.
         :param accumulated_minibatch_data: the minibatch data to be populated.
@@ -268,26 +270,32 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
         pass
 
     @final
-    def create_minibatch(self, data_iterator_to_consume: Iterator[TensorizedData], max_num_items: int) -> Tuple[
-        Dict[str, Any], bool, int]:
+    def create_minibatch(self, data_iterator_to_consume: Iterator[TensorizedData], max_num_items: int) -> \
+            Tuple[Dict[str, Any], bool, int]:
         """
         Creates a minibatch from a finalized minibatch.
 
-        :return: the data of the minibatch, a bool indicating whether the minibatch is full (True) and
+        :return: the data of the minibatch, a bool indicating whether the data iterator was fully consumed and
                 the number of elements in the minibatch
         """
         mb_data = self.initialize_minibatch()
-        have_more_data = False
         num_elements_added = 0
-        for i, element in enumerate(data_iterator_to_consume, start=1):
+        for element in islice(data_iterator_to_consume, max_num_items):
             continue_extending = self.extend_minibatch_by_sample(element, mb_data)
             num_elements_added += 1
-            if not continue_extending or i >= max_num_items:
-                have_more_data = True
+            if not continue_extending:
+                # The implementation of the component asked to stop extending the minibatch.
+                data_iterator_exhausted = False
                 break
+        else:
+            # The data is exhausted if we finished iterating through the loop and still don't have max_num_items
+            data_iterator_exhausted = num_elements_added < max_num_items
+
         if num_elements_added == 0:
-            return {}, False, 0
-        return self.finalize_minibatch(mb_data), have_more_data, num_elements_added
+            assert data_iterator_exhausted, 'The data iterator was not exhausted but zero items were returned.'
+            return {}, True, 0
+
+        return self.finalize_minibatch(mb_data), data_iterator_exhausted, num_elements_added
 
     # endregion
 

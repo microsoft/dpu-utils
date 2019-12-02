@@ -94,15 +94,15 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             running_avg_loss = 0.0
             num_minibatches = 0
             num_samples = 0
-            have_more_data = True
+
             start_time = time.time()
             self.__model.reset_metrics()
             with tqdm(desc='Training', disable=not show_progress_bar, leave=False) as progress_bar:
-                while have_more_data:
-                    mb_data, have_more_data, num_elements = self.__model.create_minibatch(data_iter,
+                while True:
+                    mb_data, data_iterator_exhausted, num_elements = self.__model.create_minibatch(data_iter,
                                                                                           max_num_items=self.__minibatch_size)
-                    if not have_more_data or num_elements == 0:
-                        break  # Do not consider half-full minibatches
+                    if data_iterator_exhausted or num_elements == 0:
+                        break  # Do not consider half-full or empty minibatches
                     optimizer.zero_grad()
                     mb_loss = self.__model.forward(**mb_data)
                     mb_loss.backward()
@@ -133,21 +133,22 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             sum_epoch_loss = 0
             num_minibatches = 0
             num_samples = 0
-            have_more_data = True
             start_time = time.time()
             self.__model.reset_metrics()
             with tqdm(desc='Validation', disable=not show_progress_bar, leave=False) as progress_bar, torch.no_grad():
-                while have_more_data:
-                    mb_data, have_more_data, num_elements = self.__model.create_minibatch(data_iter,
+                while True:
+                    mb_data, data_iterator_exhausted, num_elements = self.__model.create_minibatch(data_iter,
                                                                                           max_num_items=self.__minibatch_size)
                     if num_elements == 0:
-                        break  # Do not consider half-full minibatches
+                        break  # No more elements could be found in the data_iter.
                     mb_loss = self.__model.forward(**mb_data)
                     num_minibatches += 1
                     num_samples += num_elements
                     sum_epoch_loss += float(mb_loss.cpu())
                     progress_bar.update()
                     progress_bar.set_postfix(Loss=f'{sum_epoch_loss / num_minibatches:.2f}')
+                    if data_iterator_exhausted:
+                        break  # No more elements in the data iterator
 
             elapsed_time = time.time() - start_time  # type: float
             validation_loss = sum_epoch_loss / num_minibatches
@@ -169,4 +170,5 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     self.LOGGER.warning('After %s epochs loss has not improved. Stopping.', num_epochs_not_improved)
                     break
 
+        # Restore the best model that was found.
         self.restore_model()
