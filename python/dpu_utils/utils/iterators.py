@@ -204,9 +204,8 @@ def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out
 
     buffer = []  # type: List[T]
     for element in input_iterator:
-        if len(buffer) < buffer_size:
-            buffer.append(element)
-        else:
+        buffer.append(element)
+        if len(buffer) > buffer_size:
             random.shuffle(buffer)
             for _ in range(out_slice_sizes):
                 yield buffer.pop()
