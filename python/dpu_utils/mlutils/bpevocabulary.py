@@ -104,7 +104,14 @@ class BpeVocabulary(Sized):
 
         new_pieces = []   # type: List[str]
         for piece in pieces:
-            # TODO(Alexey): Can you add a comment about what this is doing? I don't understand.
+            # Split subtokens composed of a digit and comma
+            #
+            # E.g. given in an input sentence: 
+            #      text = 'for i in range(100, 2):'
+            # Default output of tokenizer may be: 
+            #      ['▁for', '▁i', '▁in', '▁range', '(1', '00,', '▁2', '):']
+            # Following will change this to: 
+            #      ['▁for', '▁i', '▁in', '▁range', '(1', '0', '0', ',', '▁2', '):']            
             if len(piece) > 1 and piece[-1] == ',' and piece[-2].isdigit():
                 cur_pieces = self.__sp_model.EncodeAsPieces(
                     piece[:-1].replace(SPIECE_UNDERLINE, ''))
@@ -189,4 +196,4 @@ class BpeVocabulary(Sized):
                         else:
                             f.write(' '.join(element))
                             f.write('\n')
-            return self.create_vocabulary_from_file(data_path)
+            return self.create_vocabulary_from_file(data_path)   
