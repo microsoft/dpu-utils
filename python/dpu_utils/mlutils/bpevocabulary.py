@@ -14,20 +14,24 @@ SPIECE_UNDERLINE = u'▁'
 class BpeVocabulary(Sized):
     """
     A vocabulary that maps strings to unique ids (and back), and a tokenizer based on
-    Byte-Pair encoding.
+    Byte-Pair Encoding using sentencepiece from https://github.com/google/sentencepiece.
 
-    To create a vocabulary use `BpeVocabulary.create_vocabulary()` and pass
-    a path to plain text file containing input data. The control flow symbols have to be introduced
+        Sennrich, Rico, Barry Haddow, and Alexandra Birch.
+        "Neural machine translation of rare words with subword units."
+        arXiv preprint arXiv:1508.07909 (2015).
+
+    To create a vocabulary use `BpeVocabulary.create_vocabulary()`.
+    The control flow symbols have to be introduced
     manually, during preprocessing step.
 
-    Vocabulary object usage: Assuming an initialized vocabulary `v`:
+    BpeVocabulary object usage: Assuming an initialized vocabulary `v`:
 
-       * To get the id of an element use `v.get_id_or_unk("element")`.
-       * To get the ids of a sequence, use `v.get_id_or_unk_multiple(..)`.
+       * To get the the tokenized version of a string `v.tokenize("a single string here")`.
+       * To get the ids of a string, use `v.get_id_or_unk_for_text("a single string here")`.
+       * To get a string from a list of the ids of pieces, use `v.convert_ids_to_string([10, 2, 5, 3])`.
        * To get the size of the vocabulary use `len(v)`
     """
     LOGGER = logging.getLogger('BpeVocabulary')
-    DEFAULT_USER_DEFINED_SYMBOLS = ["<DEDENT>", "<INDENT>", "<NUM_LIT>", "<STR_LIT>"]
     DEFAULT_CONTROL_SYMBOLS = ["<endofline>", "<endoftext>"]
 
     def __init__(self, max_size: int, sentencepiece_model_filepath: Optional[str]=None,
@@ -43,7 +47,7 @@ class BpeVocabulary(Sized):
 
         self.vocab_file = sentencepiece_model_filepath
         if user_defined_symbols is None:
-            user_defined_symbols = self.DEFAULT_USER_DEFINED_SYMBOLS
+            user_defined_symbols = ""
         self.user_defined_symbols=",".join(user_defined_symbols)
 
         if control_symbols is None:
