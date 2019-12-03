@@ -1,4 +1,5 @@
 import multiprocessing
+import random
 import sys
 import queue
 import threading
@@ -7,7 +8,7 @@ from typing import TypeVar, Iterable, Iterator, List, Callable, Optional
 
 T = TypeVar('T')
 
-__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator']
+__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator']
 
 
 class ThreadedIterator(Iterator[T]):
@@ -188,3 +189,26 @@ class DoubleBufferedIterator(Iterator[T]):
             self.__worker_process_outer.join()
             raise StopIteration
         return next_element
+
+
+def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
+    """
+    Accept an iterator and return an approximate streaming (and memory efficient) shuffled iterator.
+
+    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled and
+    `out_slice_sizes` random elements from the buffer are returned. Thus, there is a good bias for
+    yielding the first set of elements in input early.
+
+    """
+    assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
+
+    buffer = []  # type: List[T]
+    for element in input_iterator:
+        buffer.append(element)
+        if len(buffer) > buffer_size:
+            random.shuffle(buffer)
+            for _ in range(out_slice_sizes):
+                yield buffer.pop()
+
+    random.shuffle(buffer)
+    yield from buffer
