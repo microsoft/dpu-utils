@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Optional, Iterable, Set, TypeVar, Generic
+from typing import Optional, Iterable, Set, TypeVar, Generic, Callable
 
 import torch
 from tqdm import tqdm
@@ -16,20 +16,29 @@ TensorizedData = TypeVar('TensorizedData')
 __all__ = ['ComponentTrainer']
 
 class ComponentTrainer(Generic[InputData, TensorizedData]):
-    """A trainer for `BaseComponent`s. Used mainly for supervised learning."""
+    """
+    A trainer for `BaseComponent`s. Used mainly for supervised learning.
+
+    Create a `ComponentTrainer` by passing a `BaseComponent` in the constructor.
+    Invoke `train()` to initiate the training loop.
+
+    """
 
     LOGGER = logging.getLogger('ComponentTrainer')
 
     def __init__(self, model: BaseComponent[InputData, TensorizedData], save_location: RichPath,
-                 *, max_num_epochs: int = 200, minibatch_size: int = 200):
+                 *, max_num_epochs: int = 200, minibatch_size: int = 200,
+                 optimizer_creator: Optional[Callable[[Iterable[torch.Tensor]], torch.optim.Optimizer]]=None):
         self.__model = model
         self.__save_location = save_location
         assert save_location.path.endswith('.pkl.gz'), 'All models are stored as .pkl.gz. Please indicate this in the save_location.'
 
         self.__max_num_epochs = max_num_epochs
         self.__minibatch_size = minibatch_size
-
-        # TODO: Use hypers to add different optimizers and their hyperparameters
+        if optimizer_creator is None:
+            self.__create_optimizer = torch.optim.Adam
+        else:
+            self.__create_optimizer = optimizer_creator
 
     @property
     def model(self) -> BaseComponent[InputData, TensorizedData]:
@@ -54,7 +63,20 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
-              exponential_running_average_factor: float = 0.97, parameters_to_freeze: Optional[Set] = None):
+              exponential_running_average_factor: float = 0.97, parameters_to_freeze: Optional[Set] = None) -> None:
+        """
+        The training-validation loop for `BaseComponent`s.
+
+        :param training_data: An iterable that each iteration yields the full training data.
+        :param validation_data: An iterable that each iteration yields the full validation data.
+        :param show_progress_bar: Show a progress bar
+        :param patience: The number of iterations before early stopping kicks in.
+        :param initialize_metadata: If true, initialize the metadata from the training_data. Otherwise,
+            assume that the model that is being trained has its metadata already initialized.
+        :param exponential_running_average_factor: The factor of the running average of the training loss
+            displayed in th the progress bar.
+        :param parameters_to_freeze: The (optional) set of parameters to freeze during training.
+        """
         if initialize_metadata:
             self.__load_metadata(training_data)
 
@@ -82,7 +104,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
         if parameters_to_freeze is None:
             parameters_to_freeze = set()
-        optimizer = torch.optim.Adam(set(self.__model.parameters()) - parameters_to_freeze)
+        trainable_parameters = set(self.__model.parameters()) - parameters_to_freeze
+        optimizer = self.__create_optimizer(trainable_parameters)
 
         best_loss = float('inf')  # type: float
         num_epochs_not_improved = 0  # type: int
@@ -122,6 +145,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             elapsed_time = time.time() - start_time  # type: float
             self.LOGGER.info('Training complete in %.1fsec [%.2f samples/sec]', elapsed_time,
                              (num_samples / elapsed_time))
+            assert num_minibatches > 0, 'No training minibatches were created. The minibatch size may be too large or the training dataset size too small.'
             self.LOGGER.info('Epoch %i: Avg Train Loss %.2f', epoch + 1, sum_epoch_loss / num_minibatches)
             train_metrics = self.__model.report_metrics()
             if len(train_metrics) > 0:
@@ -151,6 +175,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                         break  # No more elements in the data iterator
 
             elapsed_time = time.time() - start_time  # type: float
+            assert num_samples > 0, 'No validation data was found.'
             validation_loss = sum_epoch_loss / num_minibatches
             self.LOGGER.info('Validation complete in %.1fsec [%.2f samples/sec]', elapsed_time,
                              (num_samples / elapsed_time))
