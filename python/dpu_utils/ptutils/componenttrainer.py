@@ -74,7 +74,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         :param initialize_metadata: If true, initialize the metadata from the training_data. Otherwise,
             assume that the model that is being trained has its metadata already initialized.
         :param exponential_running_average_factor: The factor of the running average of the training loss
-            displayed in th the progress bar.
+            displayed in the progress bar.
         :param parameters_to_freeze: The (optional) set of parameters to freeze during training.
         """
         if initialize_metadata:
