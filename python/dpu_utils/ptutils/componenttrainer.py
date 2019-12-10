@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Optional, Iterable, Set, TypeVar, Generic, Callable
+from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict
 
 import torch
 from tqdm import tqdm
@@ -12,6 +12,7 @@ from dpu_utils.utils.iterators import shuffled_iterator
 
 InputData = TypeVar('InputData')
 TensorizedData = TypeVar('TensorizedData')
+EndOfEpochHook = Callable[[BaseComponent, int, Dict], None]
 
 __all__ = ['ComponentTrainer']
 
@@ -40,6 +41,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         else:
             self.__create_optimizer = optimizer_creator
 
+        self.__train_epoch_end_hooks = []  # type: List[EndOfEpochHook]
+        self.__validation_epoch_end_hooks = [] # type: List[EndOfEpochHook]
+
     @property
     def model(self) -> BaseComponent[InputData, TensorizedData]:
         return self.__model
@@ -60,6 +64,12 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def restore_model(self, device=None) -> None:
         self.__model = BaseComponent.restore_model(self.__save_location, device=device)
+
+    def register_train_epoch_end_hook(self, hook: EndOfEpochHook):
+        self.__train_epoch_end_hooks.append(hook)
+
+    def register_validation_epoch_end_hook(self, hook: EndOfEpochHook):
+        self.__validation_epoch_end_hooks.append(hook)
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
@@ -148,6 +158,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             assert num_minibatches > 0, 'No training minibatches were created. The minibatch size may be too large or the training dataset size too small.'
             self.LOGGER.info('Epoch %i: Avg Train Loss %.2f', epoch + 1, sum_epoch_loss / num_minibatches)
             train_metrics = self.__model.report_metrics()
+            for epoch_hook in self.__train_epoch_end_hooks:
+                epoch_hook(self.__model, epoch, train_metrics)
             if len(train_metrics) > 0:
                 self.LOGGER.info('Training Metrics: %s', json.dumps(train_metrics, indent=2))
 
@@ -181,6 +193,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                              (num_samples / elapsed_time))
             self.LOGGER.info('Epoch %i: Avg Valid Loss %.2f', epoch + 1, validation_loss)
             validation_metrics = self.__model.report_metrics()
+            for epoch_hook in self.__validation_epoch_end_hooks:
+                epoch_hook(self.__model, epoch, train_metrics)
             if len(validation_metrics) > 0:
                 self.LOGGER.info('Validation Metrics: %s', json.dumps(validation_metrics, indent=2))
 
