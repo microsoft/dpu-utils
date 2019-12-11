@@ -137,7 +137,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     if data_iterator_exhausted or num_elements == 0:
                         break  # Do not consider half-full or empty minibatches
                     optimizer.zero_grad()
-                    mb_loss = self.__model.forward(**mb_data)
+                    mb_loss = self.__model(**mb_data)
                     mb_loss.backward()
 
                     optimizer.step()
@@ -177,7 +177,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                                                                                           max_num_items=self.__minibatch_size)
                     if num_elements == 0:
                         break  # No more elements could be found in the data_iter.
-                    mb_loss = self.__model.forward(**mb_data)
+                    mb_loss = self.__model(**mb_data)
                     num_minibatches += 1
                     num_samples += num_elements
                     sum_epoch_loss += float(mb_loss.cpu())
