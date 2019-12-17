@@ -35,7 +35,7 @@ class ChunkWriter(Generic[T]):
         if isinstance(out_folder, str):
             self.__out_folder = RichPath.create(out_folder)  # type: RichPath
         else:
-            self.__out_folder = out_folder  # type: RichPath
+            self.__out_folder = out_folder
         self.__out_folder.make_as_dir()
         self.__file_prefix = file_prefix
         self.__max_chunk_size = max_chunk_size

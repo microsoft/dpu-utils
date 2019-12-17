@@ -277,7 +277,7 @@ class LocalPath(RichPath):
 
     def read_as_jsonl(self, error_handling: Optional[Callable[[str, Exception], None]]=None) -> Iterable[Any]:
         """
-        Parse JSONL files. See http://jsonlines.org/ for more.
+        Iterate through JSONL files. See http://jsonlines.org/ for more.
 
         :param error_handling: a callable that receives the original line and the exception object and takes
                 over how parse error handling should happen.

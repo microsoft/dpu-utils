@@ -50,7 +50,7 @@ def split_identifier_into_parts(identifier: str) -> List[str]:
     """
     snake_case = identifier.split("_")
 
-    identifier_parts = []
+    identifier_parts = []  # type: List[str]
     for i in range(len(snake_case)):
         part = snake_case[i]
         if len(part) > 0:

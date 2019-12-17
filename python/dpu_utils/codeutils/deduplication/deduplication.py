@@ -28,6 +28,17 @@ class DuplicateDetector(Generic[DocumentId]):
         In Software Engineering (ICSE), 2016
         IEEE/ACM 38th International Conference on 2016 May 14 (pp. 1157-1168)
 
+    Sample usage:
+        * Add all files (and their tokens) via `add_files()`
+        * Call `compute_duplicates()`
+        * If the goal is to retrieve a list of files to be excluded, instead use `compute_ids_to_exclude()`
+
+
+    See also:
+        Allamanis, Miltiadis. "The adverse effects of code duplication in machine learning models of code."
+        Proceedings of the 2019 ACM SIGPLAN International Symposium on New Ideas, New Paradigms,
+         and Reflections on Programming and Software. ACM, 2019.
+
     """
 
     IDENTIFIER_REGEX = re.compile('[_a-zA-Z][_a-zA-Z0-9]*')

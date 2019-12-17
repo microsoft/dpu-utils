@@ -20,13 +20,16 @@ def save_json_gz(data: Any, filename: str) -> None:
 
 
 def load_jsonl_gz(filename: str) -> Iterator[Any]:
+    """
+    Iterate through gzipped JSONL files. See http://jsonlines.org/ for more.
+    """
     reader = codecs.getreader('utf-8')
     with gzip.open(filename) as f:
         for line in reader(f):
             yield json.loads(line, object_pairs_hook=OrderedDict)
 
 
-def save_jsonl_gz(data: Iterable[Any], filename: str)-> None:
+def save_jsonl_gz(data: Iterable[Any], filename: str) -> None:
     with gzip.GzipFile(filename, 'wb') as out_file:
         writer = codecs.getwriter('utf-8')
         for element in data:

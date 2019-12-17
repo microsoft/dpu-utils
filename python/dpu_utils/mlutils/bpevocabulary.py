@@ -47,7 +47,7 @@ class BpeVocabulary(Sized):
 
         self.vocab_file = sentencepiece_model_filepath
         if user_defined_symbols is None:
-            user_defined_symbols = ""
+            user_defined_symbols = []
         self.user_defined_symbols=",".join(user_defined_symbols)
 
         if control_symbols is None:
@@ -152,13 +152,15 @@ class BpeVocabulary(Sized):
         out_string = ''.join((self.__sp_model.IdToPiece(i) for i in piece_ids)).replace(SPIECE_UNDERLINE, ' ').strip()
         return out_string
 
-    def create_vocabulary_from_file(self, sp_text_file: str, num_threads: int=os.cpu_count(),
+    def create_vocabulary_from_file(self, sp_text_file: str, num_threads: Optional[int]=os.cpu_count(),
                                     max_sentence_length: int=16384, character_coverage: float=0.99995) -> None:
         """
         Train sentencepiece tokenizer using BPE model and build a vocabulary.
 
         sp_text_file: path to a plain text file containing the training dataset.
         """
+        if num_threads is None:
+            num_threads = 1
         with TemporaryDirectory() as tmpdir:
             model_filename = os.path.join(tmpdir, f'bpe_{self.__max_size}')
             command = [

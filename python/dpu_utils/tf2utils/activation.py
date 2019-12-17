@@ -20,7 +20,7 @@ def gelu(input_tensor: tf.Tensor) -> tf.Tensor:
 
 def get_activation_function_by_name(
     activation_fn_name: Optional[str],
-) -> Callable[[tf.Tensor], tf.Tensor]:
+) -> Optional[Callable[[tf.Tensor], tf.Tensor]]:
     """Convert from an activation function name to the function itself."""
     if activation_fn_name is None:
         return None

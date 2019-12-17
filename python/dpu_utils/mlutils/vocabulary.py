@@ -106,7 +106,7 @@ class Vocabulary(Sized):
     @staticmethod
     def create_vocabulary(tokens: Union[Iterable[str], typing.Counter[str]], max_size: int,
                           count_threshold: int = 5, add_unk: bool = True, add_pad: bool = False) -> 'Vocabulary':
-        if type(tokens) is Counter:
+        if isinstance(tokens, Counter):
             token_counter = tokens
         else:
             token_counter = Counter(tokens)
