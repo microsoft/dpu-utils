@@ -4,7 +4,7 @@ import sys
 import queue
 import threading
 import traceback
-from typing import TypeVar, Iterable, Iterator, List, Callable, Optional
+from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, Union, Tuple
 
 T = TypeVar('T')
 
@@ -56,18 +56,18 @@ class MultiWorkerCallableIterator(Iterable):
     have at least one element. The order of the callables is shuffled arbitrarily."""
 
     def __init__(self, argument_iterator: Iterator[Iterable], worker_callable: Callable, max_queue_size: int=1, num_workers: int = 5, use_threads: bool=True):
-        self.__in_queue = queue.Queue() if use_threads else multiprocessing.Queue()
+        self.__in_queue = queue.Queue() if use_threads else multiprocessing.Queue()  # type: Union[queue.Queue, multiprocessing.Queue]
         self.__num_elements = 0
         for callable_args in argument_iterator:
             self.__in_queue.put(callable_args)
             self.__num_elements += 1
         self.__out_queue = queue.Queue(maxsize=max_queue_size) if use_threads else multiprocessing.Queue(
             maxsize=max_queue_size
-        )
+        ) # type: Union[queue.Queue, multiprocessing.Queue]
         self.__threads = [
             threading.Thread(target=lambda: self.__worker(worker_callable)) if use_threads
             else multiprocessing.Process(target=lambda: self.__worker(worker_callable)) for _ in range(num_workers)
-        ]
+        ]  # type: List[Union[threading.Thread, multiprocessing.Process]]
         for worker in self.__threads:
             worker.start()
 
@@ -103,7 +103,7 @@ class BufferedIterator(Iterable[T]):
         self.__is_enabled = enabled
 
         if enabled:
-            self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)
+            self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
             self.__worker_process = multiprocessing.Process(target=lambda: self.__worker(original_iterator))
             self.__worker_process.start()
 
@@ -141,8 +141,8 @@ class DoubleBufferedIterator(Iterator[T]):
     Note: The inner iterable should *not* return None"""
 
     def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
-        self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)
-        self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)
+        self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
+        self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
         self.__worker_process_inner = multiprocessing.Process(target=lambda: self.__worker_inner(original_iterable))
         self.__worker_process_outer = multiprocessing.Process(target=lambda: self.__worker_outer())
         self.__worker_process_inner.start()
