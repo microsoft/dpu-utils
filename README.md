@@ -13,35 +13,65 @@ Stored in the `python` subdirectory, published as the `dpu-utils` package.
 pip install dpu-utils
 ```
 
-### Overview of Utilities:
+### Overview
+Below you can find an overview of the utilities included. Detailed documentation
+is provided at the docstring of each class.
 
-Generic Utilities:
-* `dpu_utils.utils.RichPath` a convenient way of using both paths and Azure paths in your code.
-* `dpu_utils.utils.*Iterator` iterator wrappers that can parallelize their iteration in other threads/processes.
-* `dpu_utils.utils.{load,save}_json[l]_gz` convenience methods for loading .json[l].gz from the filesystem.
-* `dpu_utils.utils.git_tag_run` that tags the current working directory git the state of the code.
+##### Generic Utilities
+* `dpu_utils.utils.ChunkWriter` provides a convenient API for writing output in multiple parts (chunks).
+* `dpu_utils.utils.RichPath` an API that abstract local and Azure Blob paths in your code.
+* `dpu_utils.utils.*Iterator` Wrappers that can parallelize and shuffle iterators.
+* `dpu_utils.utils.{load,save}_json[l]_gz` convenience API for loading and writing `.json[l].gz` files.
+* `dpu_utils.utils.git_tag_run` tags the current working directory git the state of the code.
 * `dpu_utils.utils.run_and_debug` when an exception happens, start a debug session. Usually a wrapper of `__main__`.
-* `dpu_utils.utils.ChunkWriter` that helps writing chunks to the output.
 
-TensorFlow Utilities:
+##### General Machine Learning Utilities
+* `dpu_utils.mlutils.Vocabulary` map elements into unique integer ids and back.
+    Commonly used in machine learning models that work over discrete data (e.g. 
+    words in NLP). Contains methods for converting an list of tokens into their
+    "tensorized" for of integer ids.  
+* `dpu_utils.mlutils.BpeVocabulary` a vocabulary for machine learning models that employs BPE (via `sentencepiece`).
+* `dpu_utils.mlutils.CharTensorizer` convert character sequences into into tensors, commonly used
+    in machine learning models whose input is a list of characters.
+
+##### Code-related Utilities
+* `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
+* `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and useful operations on lattices in Python.
+* `dpu_utils.codeutils.get_language_keywords()` an API to retrieve the keyword tokens for many programming languages.
+* `dpu_utils.codeutils.deduplication.DuplicateDetector` API to detects (near)duplicates in codebases.
+
+##### TensorFlow 1.x Utilities
+* `dpu_utils.tfutils.get_activation` retrieve activations function by name.
 * `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
-* `dpu_utils.tfutils.unsorted_segment_logsumexp`
-* `dpu_utils.tfutils.unsorted_segment_log_softmax`
 * `dpu_utils.tfutils.TFVariableSaver` save TF variables in an object that can be pickled.
 
-General Machine Learning Utilities:
-* `dpu_utils.mlutils.CharTensorizer` for character-level tensorization.
-* `dpu_utils.mlutils.Vocabulary` a str to int vocabulary for machine learning models
+Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
+* `dpu_utils.tfutils.unsorted_segment_logsumexp`
+* `dpu_utils.tfutils.unsorted_segment_log_softmax`
+* `dpu_utils.tfutils.unsorted_segment_softmax`
 
-TensorFlow Models:
+##### TensorFlow 2.x Utilities
+* `dpu_utils.tf2utils.get_activation_function_by_name` retrieve activation functions by name.
+* `dpu_utils.tf2utils.gelu` The GeLU activation function.
+* `dpu_utils.tf2utils.MLP` An MLP layer.
+
+Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
+* `dpu_utils.tf2utils.unsorted_segment_logsumexp` 
+* `dpu_utils.tf2utils.unsorted_segment_log_softmax`
+* `dpu_utils.tf2utils.unsorted_segment_softmax`
+
+
+##### TensorFlow Models:
 * `dpu_utils.tfmodels.SparseGGNN` a sparse GGNN implementation.
 * `dpu_utils.tfmodels.AsyncGGNN` an asynchronous GGNN implementation.
 
-Code-related Utilities
-* `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
-* `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and some useful operations in Python.
-* `dpu_utils.codeutils.get_language_keywords()` that retrieves the keyword tokens for many programming languages.
-* `dpu_utils.codeutils.deduplication.DuplicateDetector` that detects duplicates in codebases.
+These models have not been tested with TF 2.0.
+
+##### PyTorch Utilities
+* `dpu_utils.ptutils.BaseComponent` a wrapper abstract class around `nn.Module` that 
+   takes care of essential elements of most neural network components.
+* `dpu_utils.ptutils.ComponentTrainer` a training loop for `BaseComponent`s.
+
 
 ### Command-line tools
 
