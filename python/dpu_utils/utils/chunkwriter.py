@@ -73,7 +73,8 @@ class ChunkWriter(Generic[T]):
             '%s%03d%s' % (self.__file_prefix, self.__num_files_written, self.__file_suffix)
         )
         if self.__parallel_writers > 0:
-            self.__writer_executors.submit(lambda: outfile.save_as_compressed_file(self.__current_chunk))
+            to_write = self.__current_chunk
+            self.__writer_executors.submit(lambda: outfile.save_as_compressed_file(to_write))
         else:
             outfile.save_as_compressed_file(self.__current_chunk)
         self.__current_chunk = []
