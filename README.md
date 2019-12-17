@@ -17,60 +17,61 @@ pip install dpu-utils
 Below you can find an overview of the utilities included. Detailed documentation
 is provided at the docstring of each class.
 
-##### Generic Utilities
-* `dpu_utils.utils.ChunkWriter` provides a convenient API for writing output in multiple parts (chunks).
-* `dpu_utils.utils.RichPath` an API that abstract local and Azure Blob paths in your code.
-* `dpu_utils.utils.*Iterator` Wrappers that can parallelize and shuffle iterators.
-* `dpu_utils.utils.{load,save}_json[l]_gz` convenience API for loading and writing `.json[l].gz` files.
-* `dpu_utils.utils.git_tag_run` tags the current working directory git the state of the code.
-* `dpu_utils.utils.run_and_debug` when an exception happens, start a debug session. Usually a wrapper of `__main__`.
+##### Generic Utilities `dpu_utils.utils`
+* [`ChunkWriter`](python/dpu_utils/utils/chunkwriter.py) provides a convenient API for writing output in multiple parts (chunks).
+* [`RichPath`](python/dpu_utils/utils/richpath.py) an API that abstract local and Azure Blob paths in your code.
+* [`*Iterator`](python/dpu_utils/utils/iterators.py) Wrappers that can parallelize and shuffle iterators.
+* [`{load,save}_json[l]_gz`](python/dpu_utils/utils/dataloading.py) convenience API for loading and writing `.json[l].gz` files.
+* [`git_tag_run`](python/dpu_utils/utils/gitlog.py) tags the current working directory git the state of the code.
+* [`run_and_debug`](python/dpu_utils/utils/debughelper.py) when an exception happens, start a debug session. Usually a wrapper of `__main__`.
 
-##### General Machine Learning Utilities
-* `dpu_utils.mlutils.Vocabulary` map elements into unique integer ids and back.
+##### General Machine Learning Utilities `dpu_utils.mlutils`
+* [`Vocabulary`](python/dpu_utils/mlutils/vocabulary.py) map elements into unique integer ids and back.
     Commonly used in machine learning models that work over discrete data (e.g. 
     words in NLP). Contains methods for converting an list of tokens into their
     "tensorized" for of integer ids.  
-* `dpu_utils.mlutils.BpeVocabulary` a vocabulary for machine learning models that employs BPE (via `sentencepiece`).
-* `dpu_utils.mlutils.CharTensorizer` convert character sequences into into tensors, commonly used
+* [`BpeVocabulary`](python/dpu_utils/mlutils/bpevocabulary.py) a vocabulary for machine learning models that employs BPE (via `sentencepiece`).
+* [`CharTensorizer`](python/dpu_utils/mlutils/chartensorizer.py) convert character sequences into into tensors, commonly used
     in machine learning models whose input is a list of characters.
 
-##### Code-related Utilities
-* `dpu_utils.codeutils.split_identifier_into_parts()` split identifiers into subtokens on CamelCase and snake_case.
-* `dpu_utils.codeutils.{Lattice, CSharpLattice}` represent lattices and useful operations on lattices in Python.
-* `dpu_utils.codeutils.get_language_keywords()` an API to retrieve the keyword tokens for many programming languages.
-* `dpu_utils.codeutils.deduplication.DuplicateDetector` API to detects (near)duplicates in codebases.
+##### Code-related Utilities `dpu_utils.codeutils`
+* [`split_identifier_into_parts()`](python/dpu_utils/codeutils/identifiersplitting.py) split identifiers into subtokens on CamelCase and snake_case.
+* [`Lattice`](python/dpu_utils/codeutils/lattice/lattice.py), [`CSharpLattice`](python/dpu_utils/codeutils/lattice/csharplattice.py) represent lattices and useful operations on lattices in Python.
+* [`get_language_keywords()`](python/dpu_utils/codeutils/keywords/keywordlist.py) an API to retrieve the keyword tokens for many programming languages.
+* [`deduplication.DuplicateDetector`](python/dpu_utils/codeutils/deduplication/deduplication.py) API to detects (near)duplicates in codebases.
+See also [here](#approximate-duplicate-code-detection) for a command line tool.
 
-##### TensorFlow 1.x Utilities
-* `dpu_utils.tfutils.get_activation` retrieve activations function by name.
-* `dpu_utils.tfutils.GradRatioLoggingOptimizer` a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
-* `dpu_utils.tfutils.TFVariableSaver` save TF variables in an object that can be pickled.
-
-Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
-* `dpu_utils.tfutils.unsorted_segment_logsumexp`
-* `dpu_utils.tfutils.unsorted_segment_log_softmax`
-* `dpu_utils.tfutils.unsorted_segment_softmax`
-
-##### TensorFlow 2.x Utilities
-* `dpu_utils.tf2utils.get_activation_function_by_name` retrieve activation functions by name.
-* `dpu_utils.tf2utils.gelu` The GeLU activation function.
-* `dpu_utils.tf2utils.MLP` An MLP layer.
+##### TensorFlow 1.x Utilities `dpu_utils.tfutils`
+* [`get_activation`](python/dpu_utils/tfutils/activation.py) retrieve activations function by name.
+* [`GradRatioLoggingOptimizer`](python/dpu_utils/tfutils/gradratiologgingoptimizer.py) a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
+* [`TFVariableSaver`](python/dpu_utils/tfutils/tfvariablesaver.py) save TF variables in an object that can be pickled.
 
 Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
-* `dpu_utils.tf2utils.unsorted_segment_logsumexp` 
-* `dpu_utils.tf2utils.unsorted_segment_log_softmax`
-* `dpu_utils.tf2utils.unsorted_segment_softmax`
+* [`unsorted_segment_logsumexp`](python/dpu_utils/tfutils/unsortedsegmentops.py)
+* [`unsorted_segment_log_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
+* [`unsorted_segment_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
+
+##### TensorFlow 2.x Utilities `dpu_utils.tf2utils`
+* [`get_activation_function_by_name`](python/dpu_utils/tf2utils/activation.py) retrieve activation functions by name.
+* [`gelu`](python/dpu_utils/tf2utils/activation.py) The GeLU activation function.
+* [`MLP`](python/dpu_utils/tf2utils/mlp.py) An MLP layer.
+
+Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
+* [`unsorted_segment_logsumexp`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
+* [`unsorted_segment_log_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
+* [`unsorted_segment_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
 
 
-##### TensorFlow Models:
-* `dpu_utils.tfmodels.SparseGGNN` a sparse GGNN implementation.
-* `dpu_utils.tfmodels.AsyncGGNN` an asynchronous GGNN implementation.
+##### TensorFlow Models `dpu_utils.tfmodels`
+* [`SparseGGNN`](python/dpu_utils/tfmodels/sparsegnn.py) a sparse GGNN implementation.
+* [`AsyncGGNN`](python/dpu_utils/tfmodels/asyncgnn.py) an asynchronous GGNN implementation.
 
 These models have not been tested with TF 2.0.
 
-##### PyTorch Utilities
-* `dpu_utils.ptutils.BaseComponent` a wrapper abstract class around `nn.Module` that 
+##### PyTorch Utilities `dpu_utils.ptutils`
+* [`BaseComponent`](python/dpu_utils/ptutils/basecomponent.py) a wrapper abstract class around `nn.Module` that 
    takes care of essential elements of most neural network components.
-* `dpu_utils.ptutils.ComponentTrainer` a training loop for `BaseComponent`s.
+* [`ComponentTrainer`](python/dpu_utils/ptutils/basecomponent.py) a training loop for `BaseComponent`s.
 
 
 ### Command-line tools
