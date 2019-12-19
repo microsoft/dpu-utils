@@ -1,6 +1,6 @@
 import unittest
 
-from dpu_utils.utils.iterators import shuffled_iterator
+from dpu_utils.utils import shuffled_iterator
 
 
 class TestShuffleIterator(unittest.TestCase):
