@@ -73,7 +73,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
-              exponential_running_average_factor: float = 0.97, parameters_to_freeze: Optional[Set] = None) -> None:
+              exponential_running_average_factor: float = 0.97, parameters_to_freeze: Optional[Set] = None,
+              parallel_minibatch_creation: bool=False) -> None:
         """
         The training-validation loop for `BaseComponent`s.
 
@@ -86,6 +87,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         :param exponential_running_average_factor: The factor of the running average of the training loss
             displayed in the progress bar.
         :param parameters_to_freeze: The (optional) set of parameters to freeze during training.
+        :param parallel_minibatch_creation: If True the minibatches will be created in a separate thread.
         """
         if initialize_metadata:
             self.__load_metadata(training_data)
@@ -104,6 +106,15 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                 original_iterator=(self.__model.load_data_from_sample(d) for d in validation_data),
                 max_queue_size=10 * self.__minibatch_size
             )
+
+        def minibatch_iterator(data_iterator):
+            while True:
+                mb_data, data_iterator_exhausted, num_elements = self.__model.create_minibatch(data_iterator,
+                                                                                               max_num_items=self.__minibatch_size)
+                yield mb_data, data_iterator_exhausted, num_elements
+
+                if data_iterator_exhausted:
+                    return
 
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.LOGGER.info('Using %s for training.' % device)
@@ -131,9 +142,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             start_time = time.time()
             self.__model.reset_metrics()
             with tqdm(desc='Training', disable=not show_progress_bar, leave=False) as progress_bar:
-                while True:
-                    mb_data, data_iterator_exhausted, num_elements = self.__model.create_minibatch(data_iter,
-                                                                                          max_num_items=self.__minibatch_size)
+                for mb_data, data_iterator_exhausted, num_elements in ThreadedIterator(minibatch_iterator(data_iter), enabled=parallel_minibatch_creation):
                     if data_iterator_exhausted or num_elements == 0:
                         break  # Do not consider half-full or empty minibatches
                     optimizer.zero_grad()
@@ -172,9 +181,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             start_time = time.time()
             self.__model.reset_metrics()
             with tqdm(desc='Validation', disable=not show_progress_bar, leave=False) as progress_bar, torch.no_grad():
-                while True:
-                    mb_data, data_iterator_exhausted, num_elements = self.__model.create_minibatch(data_iter,
-                                                                                          max_num_items=self.__minibatch_size)
+                for mb_data, data_iterator_exhausted, num_elements in ThreadedIterator(minibatch_iterator(data_iter), enabled=parallel_minibatch_creation):
                     if num_elements == 0:
                         break  # No more elements could be found in the data_iter.
                     mb_loss = self.__model(**mb_data)
