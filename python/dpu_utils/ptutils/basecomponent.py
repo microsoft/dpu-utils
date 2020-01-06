@@ -285,17 +285,17 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
             num_elements_added += 1
             if not continue_extending:
                 # The implementation of the component asked to stop extending the minibatch.
-                data_iterator_exhausted = False
+                batch_is_full = True
                 break
         else:
-            # The data is exhausted if we finished iterating through the loop and still don't have max_num_items
-            data_iterator_exhausted = num_elements_added < max_num_items
+            # At this point, the batch is full if we finished iterating through the loop and have max_num_items
+            batch_is_full = num_elements_added == max_num_items
 
         if num_elements_added == 0:
-            assert data_iterator_exhausted, 'The data iterator was not exhausted but zero items were returned.'
+            assert not batch_is_full, 'The data iterator was not exhausted but zero items were returned.'
             return {}, True, 0
 
-        return self.finalize_minibatch(mb_data), data_iterator_exhausted, num_elements_added
+        return self.finalize_minibatch(mb_data), batch_is_full, num_elements_added
 
     # endregion
 
