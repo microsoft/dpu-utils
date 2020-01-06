@@ -111,9 +111,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             while True:
                 mb_data, batch_is_full, num_elements = self.__model.create_minibatch(data_iterator, max_num_items=self.__minibatch_size)
                 if num_elements == 0:
-                    return
+                    break
                 elif not batch_is_full and not return_partial_minibatches:
-                    continue  # Do not return partial minibatches when the iterator is exhausted.
+                    break  # Do not return partial minibatches when the iterator is exhausted.
                 else:
                     yield mb_data, num_elements
 
