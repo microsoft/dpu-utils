@@ -3,7 +3,6 @@ import tempfile
 from typing import Tuple, Iterator, Iterable
 
 import torch
-import numpy as np
 
 from dpu_utils.utils import RichPath
 from dpu_utils.ptutils import ComponentTrainer
@@ -12,7 +11,7 @@ from tests.ptutils.testdata import SyntheticData
 from tests.ptutils.testmodel import SimpleRegression, SampleDatapoint
 
 
-class PytorchComponentTest(unittest.TestCase):
+class TestPytorchComponent(unittest.TestCase):
     def test_train_model(self):
         num_features = 100
         training_data, validation_data = self.__get_data(num_features)
