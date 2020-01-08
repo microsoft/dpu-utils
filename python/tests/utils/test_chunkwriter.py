@@ -28,6 +28,6 @@ class TestChunkWriter(unittest.TestCase):
             for file in tmp_path.get_filtered_files_in_dir('test*.jsonl.gz'):
                 stored_elements.update(file.read_as_jsonl())
 
-            assert stored_elements == ground_elements, f'Stored elements differ len(stored)={len(stored_elements)},' \
+            self.assertSetEqual(stored_elements, ground_elements, f'Stored elements differ len(stored)={len(stored_elements)},' \
                                                        f' len(ground)={len(ground_elements)}.' \
-                                                       f' Diff {ground_elements-stored_elements}.'
+                                                       f' Diff {ground_elements-stored_elements}.')

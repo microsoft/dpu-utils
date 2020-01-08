@@ -73,7 +73,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
-              exponential_running_average_factor: float = 0.97, parameters_to_freeze: Optional[Set] = None,
+              exponential_running_average_factor: float = 0.97, get_parameters_to_freeze: Optional[Callable[[], Set]] = None,
               parallel_minibatch_creation: bool=False) -> None:
         """
         The training-validation loop for `BaseComponent`s.
@@ -86,7 +86,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             assume that the model that is being trained has its metadata already initialized.
         :param exponential_running_average_factor: The factor of the running average of the training loss
             displayed in the progress bar.
-        :param parameters_to_freeze: The (optional) set of parameters to freeze during training.
+        :param get_parameters_to_freeze: The (optional) callable that returns the set of parameters to freeze during training.
         :param parallel_minibatch_creation: If True the minibatches will be created in a separate thread.
         """
         if initialize_metadata:
@@ -124,9 +124,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         else:
             self.__model.cpu()
 
-        if parameters_to_freeze is None:
-            parameters_to_freeze = set()
-        trainable_parameters = set(self.__model.parameters()) - parameters_to_freeze
+        if get_parameters_to_freeze is None:
+            get_parameters_to_freeze = lambda: set()
+        trainable_parameters = set(self.__model.parameters()) - get_parameters_to_freeze()
         optimizer = self.__create_optimizer(trainable_parameters)
 
         best_loss = float('inf')  # type: float

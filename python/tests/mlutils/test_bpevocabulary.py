@@ -37,5 +37,4 @@ class TestBpeVocab(unittest.TestCase):
         self.assertEqual(v2.convert_ids_to_string(idxs), text)
 
 
-if __name__ == '__main__':
-    unittest.main()
+
