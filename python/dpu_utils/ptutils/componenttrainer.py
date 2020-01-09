@@ -200,7 +200,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             self.LOGGER.info('Epoch %i: Avg Valid Loss %.2f', epoch + 1, validation_loss)
             validation_metrics = self.__model.report_metrics()
             for epoch_hook in self.__validation_epoch_end_hooks:
-                epoch_hook(self.__model, epoch, train_metrics)
+                epoch_hook(self.__model, epoch, validation_metrics)
             if len(validation_metrics) > 0:
                 self.LOGGER.info('Validation Metrics: %s', json.dumps(validation_metrics, indent=2))
 
