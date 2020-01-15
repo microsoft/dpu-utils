@@ -194,6 +194,7 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
     @device.setter
     def device(self, new_device):
         self.__device = new_device
+        self.to(new_device)
 
     @final
     def to(self, *args, **kwargs):
@@ -316,10 +317,7 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
         with gzip.open(model_path, 'rb') as f:
             model = torch.load(f, map_location=device)  # type: BaseComponent
         if device is not None:
-            if device == 'cpu':
-                model.cpu()
-            else:
-                model.cuda(device)
+            model.to(device)
         return model
 
     # endregion
