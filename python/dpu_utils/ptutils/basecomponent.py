@@ -191,16 +191,14 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
         """Retrieve the device where this component lives."""
         return self.__device
 
-    @device.setter
-    def device(self, new_device):
-        self.__device = new_device
-        self.to(new_device)
-
     @final
     def to(self, *args, **kwargs):
         super(BaseComponent, self).to(*args, **kwargs)
-        if 'device' in kwargs:
-            self.__device = kwargs['device']
+        # Ugly but seemingly necessary hack: implicit dependency on non-exposed interface.
+        device, _, _ = torch._C._nn._parse_to(*args, **kwargs)
+        self.__device = device
+        for child_module in self.children():
+            child_module.to(*args, **kwargs)
 
     @final
     def cuda(self, device=None):

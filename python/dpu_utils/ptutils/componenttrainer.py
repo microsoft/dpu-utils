@@ -118,7 +118,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     yield mb_data, num_elements
 
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        self.__model.device = device
+        self.__model.to(device)
         self.LOGGER.info('Using %s for training.' % device)
 
 
