@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict
+from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict, Iterator, Tuple
 
 import torch
 from tqdm import tqdm
@@ -65,10 +65,10 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
     def restore_model(self, device=None) -> None:
         self.__model = BaseComponent.restore_model(self.__save_location, device=device)
 
-    def register_train_epoch_end_hook(self, hook: EndOfEpochHook):
+    def register_train_epoch_end_hook(self, hook: EndOfEpochHook) -> None:
         self.__train_epoch_end_hooks.append(hook)
 
-    def register_validation_epoch_end_hook(self, hook: EndOfEpochHook):
+    def register_validation_epoch_end_hook(self, hook: EndOfEpochHook) -> None:
         self.__validation_epoch_end_hooks.append(hook)
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
@@ -107,7 +107,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                 max_queue_size=10 * self.__minibatch_size
             )
 
-        def minibatch_iterator(data_iterator, return_partial_minibatches: bool = False):
+        def minibatch_iterator(data_iterator: Iterator[TensorizedData], return_partial_minibatches: bool = False) -> Tuple[Dict, int]:
             while True:
                 mb_data, batch_is_full, num_elements = self.__model.create_minibatch(data_iterator, max_num_items=self.__minibatch_size)
                 if num_elements == 0:
@@ -118,11 +118,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     yield mb_data, num_elements
 
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.__model.device = device
         self.LOGGER.info('Using %s for training.' % device)
-        if torch.cuda.is_available():
-            self.__model.cuda()
-        else:
-            self.__model.cpu()
+
 
         if get_parameters_to_freeze is None:
             get_parameters_to_freeze = lambda: set()
@@ -192,7 +190,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     progress_bar.update()
                     progress_bar.set_postfix(Loss=f'{sum_epoch_loss / num_minibatches:.2f}')
 
-            elapsed_time = time.time() - start_time  # type: float
+            elapsed_time = time.time() - start_time
             assert num_samples > 0, 'No validation data was found.'
             validation_loss = sum_epoch_loss / num_minibatches
             self.LOGGER.info('Validation complete in %.1fsec [%.2f samples/sec]', elapsed_time,
