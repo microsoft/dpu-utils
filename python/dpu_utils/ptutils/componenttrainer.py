@@ -74,7 +74,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
               exponential_running_average_factor: float = 0.97, get_parameters_to_freeze: Optional[Callable[[], Set]] = None,
-              parallel_minibatch_creation: bool=False) -> None:
+              parallel_minibatch_creation: bool=False, device: Optional[str, torch.device] = None) -> None:
         """
         The training-validation loop for `BaseComponent`s.
 
@@ -117,7 +117,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                 else:
                     yield mb_data, num_elements
 
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        if device is None:
+            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.__model.to(device)
         self.LOGGER.info('Using %s for training.' % device)
 

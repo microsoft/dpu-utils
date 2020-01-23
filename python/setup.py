@@ -5,7 +5,7 @@ with open('../README.md') as f:
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.2.6',
+      version='0.2.7',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       long_description=long_description,
