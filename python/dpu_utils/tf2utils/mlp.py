@@ -49,26 +49,28 @@ class MLP(tf.keras.layers.Layer):
     def build(self, input_shape):
         last_shape_dim = input_shape[-1]
         for hidden_layer_idx, hidden_layer_size in enumerate(self._hidden_layer_sizes):
+            with tf.name_scope(f"{self._name}_dense_layer_{hidden_layer_idx}"):
+                self._layers.append(
+                    tf.keras.layers.Dense(
+                        units=hidden_layer_size,
+                        use_bias=self._use_biases,
+                        activation=self._activation_fun,
+                        name=f"{self._name}_dense_layer_{hidden_layer_idx}",
+                    )
+                )
+                self._layers[-1].build(tf.TensorShape(input_shape[:-1] + [last_shape_dim]))
+                last_shape_dim = hidden_layer_size
+
+        # Output layer:
+        with tf.name_scope(f"{self._name}_final_layer"):
             self._layers.append(
                 tf.keras.layers.Dense(
-                    units=hidden_layer_size,
+                    units=self._out_size,
                     use_bias=self._use_biases,
-                    activation=self._activation_fun,
-                    name=f"{self._name}_dense_layer_{hidden_layer_idx}",
+                    name=f"{self._name}_final_layer",
                 )
             )
             self._layers[-1].build(tf.TensorShape(input_shape[:-1] + [last_shape_dim]))
-            last_shape_dim = hidden_layer_size
-
-        # Output layer:
-        self._layers.append(
-            tf.keras.layers.Dense(
-                units=self._out_size,
-                use_bias=self._use_biases,
-                name=f"{self._name}_final_layer",
-            )
-        )
-        self._layers[-1].build(tf.TensorShape(input_shape[:-1] + [last_shape_dim]))
 
         super().build(input_shape)
 
