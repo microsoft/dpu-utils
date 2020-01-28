@@ -43,6 +43,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
         self.__train_epoch_end_hooks = []  # type: List[EndOfEpochHook]
         self.__validation_epoch_end_hooks = [] # type: List[EndOfEpochHook]
+        self.__metadata_finalized_hooks = []  # type: List[Callable[[], None]]
 
     @property
     def model(self) -> BaseComponent[InputData, TensorizedData]:
@@ -58,6 +59,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         self.__model.finalize_metadata_and_model()
         self.LOGGER.info('Model metadata loaded. The following model was created:\n %s', self.__model)
         self.LOGGER.info('Hyperparameters:\n %s', json.dumps(self.__model.hyperparameters, indent=2))
+        for hook in self.__metadata_finalized_hooks:
+            hook()
 
     def __save_current_model(self) -> None:
         self.__model.save(self.__save_location)
@@ -70,6 +73,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def register_validation_epoch_end_hook(self, hook: EndOfEpochHook) -> None:
         self.__validation_epoch_end_hooks.append(hook)
+
+    def register_model_metadata_finalized_hook(self, hook: Callable[[], None]) -> None:
+        self.__metadata_finalized_hooks.append(hook)
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
