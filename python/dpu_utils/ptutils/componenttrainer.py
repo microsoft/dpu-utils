@@ -46,7 +46,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
         self.__train_epoch_end_hooks = []  # type: List[EndOfEpochHook]
         self.__validation_epoch_end_hooks = [] # type: List[EndOfEpochHook]
-        self.__metadata_finalized_hooks = []  # type: List[Callable[[], None]]
+        self.__metadata_finalized_hooks = []  # type: List[Callable[[BaseComponent], None]]
+        self.__training_start_hooks = []   # type: List[Callable[[BaseComponent], None]]
 
     @property
     def model(self) -> BaseComponent[InputData, TensorizedData]:
@@ -63,7 +64,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         self.LOGGER.info('Model metadata loaded. The following model was created:\n %s', self.__model)
         self.LOGGER.info('Hyperparameters:\n %s', json.dumps(self.__model.hyperparameters, indent=2))
         for hook in self.__metadata_finalized_hooks:
-            hook()
+            hook(self.__model)
 
     def __save_current_model(self) -> None:
         self.__model.save(self.__save_location)
@@ -77,8 +78,11 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
     def register_validation_epoch_end_hook(self, hook: EndOfEpochHook) -> None:
         self.__validation_epoch_end_hooks.append(hook)
 
-    def register_model_metadata_finalized_hook(self, hook: Callable[[], None]) -> None:
+    def register_model_metadata_finalized_hook(self, hook: Callable[[BaseComponent], None]) -> None:
         self.__metadata_finalized_hooks.append(hook)
+
+    def register_training_start_hook(self, hook: Callable[[BaseComponent], None]) -> None:
+        self.__training_start_hooks.append(hook)
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
@@ -136,8 +140,10 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             get_parameters_to_freeze = lambda: set()
         trainable_parameters = set(self.__model.parameters()) - get_parameters_to_freeze()
         optimizer = self.__create_optimizer(trainable_parameters)
-
         scheduler = None if self.__create_scheduler is None else self.__create_scheduler(optimizer)
+
+        for hook in self.__training_start_hooks:
+            hook(self.__model)
 
         best_loss = float('inf')  # type: float
         num_epochs_not_improved = 0  # type: int
