@@ -29,7 +29,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def __init__(self, model: BaseComponent[InputData, TensorizedData], save_location: RichPath,
                  *, max_num_epochs: int = 200, minibatch_size: int = 200,
-                 optimizer_creator: Optional[Callable[[Iterable[torch.Tensor]], torch.optim.Optimizer]]=None):
+                 optimizer_creator: Optional[Callable[[Iterable[torch.Tensor]], torch.optim.Optimizer]]=None,
+                 scheduler_creator: Optional[Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler._LRScheduler]]=None):
         self.__model = model
         self.__save_location = save_location
         assert save_location.path.endswith('.pkl.gz'), 'All models are stored as .pkl.gz. Please indicate this in the save_location.'
@@ -40,6 +41,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             self.__create_optimizer = torch.optim.Adam
         else:
             self.__create_optimizer = optimizer_creator
+
+        self.__create_scheduler = scheduler_creator
 
         self.__train_epoch_end_hooks = []  # type: List[EndOfEpochHook]
         self.__validation_epoch_end_hooks = [] # type: List[EndOfEpochHook]
@@ -134,6 +137,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         trainable_parameters = set(self.__model.parameters()) - get_parameters_to_freeze()
         optimizer = self.__create_optimizer(trainable_parameters)
 
+        scheduler = None if self.__create_scheduler is None else self.__create_scheduler(optimizer)
+
         best_loss = float('inf')  # type: float
         num_epochs_not_improved = 0  # type: int
         for epoch in range(self.__max_num_epochs):
@@ -219,6 +224,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                 if num_epochs_not_improved > patience:
                     self.LOGGER.warning('After %s epochs loss has not improved. Stopping.', num_epochs_not_improved)
                     break
+
+            if scheduler is not None:
+                scheduler.step(epoch)
 
         # Restore the best model that was found.
         self.restore_model()
