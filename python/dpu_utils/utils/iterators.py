@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 import random
 import sys
@@ -140,6 +141,8 @@ class DoubleBufferedIterator(Iterator[T]):
 
     Note: The inner iterable should *not* return None"""
 
+    LOGGER = logging.getLogger(__name__)
+
     def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
         self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
         self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
@@ -157,9 +160,9 @@ class DoubleBufferedIterator(Iterator[T]):
             self.__buffer_inner.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(
+            self.LOGGER.error("Exception '%s' in inner worker of DoubleBufferedIterator:\n %s", e, "".join(
                 traceback.format_tb(tb)
-            )))
+            ), exc_info=e)
             self.__buffer_inner.put((e, tb), block=True)
 
     def __worker_outer(self) -> None:
@@ -172,9 +175,9 @@ class DoubleBufferedIterator(Iterator[T]):
             self.__buffer_outer.put(next_element, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (
-                e, "".join(traceback.format_tb(tb))
-            ))
+            self.LOGGER.error("Exception '%s' in outer worker of DoubleBufferedIterator:\n %s",
+                e, "".join(traceback.format_tb(tb)), exc_info=e
+            )
             self.__buffer_outer.put((e, tb), block=True)
 
     def __iter__(self):

@@ -58,6 +58,8 @@ class RichPath(ABC):
     ```
     which will download the remote object(s), if needed, and provide a local path.
     """
+    LOGGER = logging.getLogger(__name__)
+
     def __init__(self, path: str):
         self.__path = path
 
@@ -460,7 +462,7 @@ class AzurePath(RichPath):
         try:
             data = cached_file_path.read_as_pickle()
         except EOFError:
-            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            self.LOGGER.info("File '%s' corrupted in cache. Deleting and trying once more.", self)
             os.unlink(cached_file_path.path)
             cached_file_path = self.__cache_file_locally()
             data = cached_file_path.read_as_pickle()
@@ -476,7 +478,7 @@ class AzurePath(RichPath):
         try:
             data = cached_file_path.read_as_numpy()
         except EOFError:
-            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            self.LOGGER.info("File '%s' corrupted in cache. Deleting and trying once more.", self)
             os.unlink(cached_file_path.path)
             cached_file_path = self.__cache_file_locally()
             data = cached_file_path.read_as_numpy()
@@ -493,7 +495,7 @@ class AzurePath(RichPath):
         try:
             return cached_file_path.read_by_file_suffix()
         except EOFError:
-            print("I: File '%s' corrupted in cache. Deleting and trying once more." % (self,))
+            self.LOGGER.info("File '%s' corrupted in cache. Deleting and trying once more.", self)
             os.unlink(cached_file_path.path)
             cached_file_path = self.__cache_file_locally()
             return cached_file_path.read_by_file_suffix()
