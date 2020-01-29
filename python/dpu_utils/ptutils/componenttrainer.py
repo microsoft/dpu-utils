@@ -1,7 +1,8 @@
 import json
 import logging
 import time
-from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict, Iterator, Tuple, Union
+from abc import ABC, abstractmethod
+from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict, Iterator, Tuple, Union, Any
 
 import torch
 from tqdm import tqdm
@@ -14,7 +15,12 @@ InputData = TypeVar('InputData')
 TensorizedData = TypeVar('TensorizedData')
 EndOfEpochHook = Callable[[BaseComponent, int, Dict], None]
 
-__all__ = ['ComponentTrainer']
+__all__ = ['ComponentTrainer', 'AbstractScheduler']
+
+class AbstractScheduler(ABC):
+    @abstractmethod
+    def step(self, epoch_idx: int, epoch_step: int)-> None:
+        pass
 
 class ComponentTrainer(Generic[InputData, TensorizedData]):
     """
@@ -29,7 +35,21 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def __init__(self, model: BaseComponent[InputData, TensorizedData], save_location: RichPath,
                  *, max_num_epochs: int = 200, minibatch_size: int = 200,
-                 optimizer_creator: Optional[Callable[[Iterable[torch.Tensor]], torch.optim.Optimizer]]=None):
+                 optimizer_creator: Optional[Callable[[Iterable[torch.Tensor]], torch.optim.Optimizer]]=None,
+                 scheduler_creator: Optional[Callable[[torch.optim.Optimizer], AbstractScheduler]]=None):
+        """
+
+        :param model: The model to be trained.
+        :param save_location: The location where the trained model will be checkpointed and saved.
+        :param max_num_epochs: The maximum number of epochs to run training for.
+        :param minibatch_size: The maximum size of the minibatch (`BaseComponent`s can override this
+            by detecting full minibatches and returning False in `extend_minibatch_by_sample`)
+        :param optimizer_creator: An optional function that accepts an iterable of the training parameters
+            (pyTorch tensors) and returns a PyTorch optimizer.
+        :param scheduler_creator: An optional function that accepts an optimizer and creates a scheduler
+            implementing `AbstractScheduler`. This could be a wrapper for existing learning schedulers.
+            The scheduler will be invoked at after each training step.
+        """
         self.__model = model
         self.__save_location = save_location
         assert save_location.path.endswith('.pkl.gz'), 'All models are stored as .pkl.gz. Please indicate this in the save_location.'
@@ -41,8 +61,12 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         else:
             self.__create_optimizer = optimizer_creator
 
+        self.__create_scheduler = scheduler_creator
+
         self.__train_epoch_end_hooks = []  # type: List[EndOfEpochHook]
         self.__validation_epoch_end_hooks = [] # type: List[EndOfEpochHook]
+        self.__metadata_finalized_hooks = []  # type: List[Callable[[BaseComponent], None]]
+        self.__training_start_hooks = []   # type: List[Callable[[BaseComponent, torch.optim.Optimizer], None]]
 
     @property
     def model(self) -> BaseComponent[InputData, TensorizedData]:
@@ -58,6 +82,8 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         self.__model.finalize_metadata_and_model()
         self.LOGGER.info('Model metadata loaded. The following model was created:\n %s', self.__model)
         self.LOGGER.info('Hyperparameters:\n %s', json.dumps(self.__model.hyperparameters, indent=2))
+        for hook in self.__metadata_finalized_hooks:
+            hook(self.__model)
 
     def __save_current_model(self) -> None:
         self.__model.save(self.__save_location)
@@ -70,6 +96,12 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
     def register_validation_epoch_end_hook(self, hook: EndOfEpochHook) -> None:
         self.__validation_epoch_end_hooks.append(hook)
+
+    def register_model_metadata_finalized_hook(self, hook: Callable[[BaseComponent], None]) -> None:
+        self.__metadata_finalized_hooks.append(hook)
+
+    def register_training_start_hook(self, hook: Callable[[BaseComponent, torch.optim.Optimizer], None]) -> None:
+        self.__training_start_hooks.append(hook)
 
     def train(self, training_data: Iterable[InputData], validation_data: Iterable[InputData],
               show_progress_bar: bool = True, patience: int = 5, initialize_metadata: bool = True,
@@ -127,6 +159,10 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             get_parameters_to_freeze = lambda: set()
         trainable_parameters = set(self.__model.parameters()) - get_parameters_to_freeze()
         optimizer = self.__create_optimizer(trainable_parameters)
+        scheduler = None if self.__create_scheduler is None else self.__create_scheduler(optimizer)
+
+        for hook in self.__training_start_hooks:
+            hook(self.__model, optimizer)
 
         best_loss = float('inf')  # type: float
         num_epochs_not_improved = 0  # type: int
@@ -142,14 +178,17 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
             start_time = time.time()
             self.__model.reset_metrics()
             with tqdm(desc='Training', disable=not show_progress_bar, leave=False) as progress_bar:
-                for mb_data, num_elements in ThreadedIterator(
+                for step_idx, (mb_data, num_elements) in enumerate(ThreadedIterator(
                         minibatch_iterator(data_iter, return_partial_minibatches=False),
-                        enabled=parallel_minibatch_creation):
+                        enabled=parallel_minibatch_creation)):
                     optimizer.zero_grad()
                     mb_loss = self.__model(**mb_data)
                     mb_loss.backward()
 
                     optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step(epoch_idx=epoch, epoch_step=step_idx)
+
                     num_minibatches += 1
                     num_samples += num_elements
                     sum_epoch_loss += float(mb_loss.cpu())
@@ -213,6 +252,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                 if num_epochs_not_improved > patience:
                     self.LOGGER.warning('After %s epochs loss has not improved. Stopping.', num_epochs_not_improved)
                     break
+
 
         # Restore the best model that was found.
         self.restore_model()
