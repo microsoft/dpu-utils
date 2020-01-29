@@ -168,7 +168,7 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
 
                     optimizer.step()
                     if scheduler is not None:
-                        scheduler.step(epoch)
+                        scheduler.step()
 
                     num_minibatches += 1
                     num_samples += num_elements
