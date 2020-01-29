@@ -167,6 +167,9 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     mb_loss.backward()
 
                     optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step(epoch)
+
                     num_minibatches += 1
                     num_samples += num_elements
                     sum_epoch_loss += float(mb_loss.cpu())
@@ -231,8 +234,6 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     self.LOGGER.warning('After %s epochs loss has not improved. Stopping.', num_epochs_not_improved)
                     break
 
-            if scheduler is not None:
-                scheduler.step(epoch)
 
         # Restore the best model that was found.
         self.restore_model()
