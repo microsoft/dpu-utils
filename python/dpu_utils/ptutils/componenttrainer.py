@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
+import math
 from typing import Optional, Iterable, Set, TypeVar, Generic, Callable, List, Dict, Iterator, Tuple, Union, Any
 
 import torch
@@ -189,14 +190,19 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                     if scheduler is not None:
                         scheduler.step(epoch_idx=epoch, epoch_step=step_idx)
 
+                    loss = float(mb_loss.cpu())
+                    if math.isnan(loss):
+                        raise Exception('Training Loss has a NaN value.')
+
+                    sum_epoch_loss += loss
                     num_minibatches += 1
                     num_samples += num_elements
-                    sum_epoch_loss += float(mb_loss.cpu())
+
                     if num_minibatches == 1:  # First minibatch
-                        running_avg_loss = float(mb_loss.cpu())
+                        running_avg_loss = loss
                     else:
                         running_avg_loss = exponential_running_average_factor * running_avg_loss + (
-                                    1 - exponential_running_average_factor) * float(mb_loss.cpu())
+                                    1 - exponential_running_average_factor) * loss
                     progress_bar.update()
                     progress_bar.set_postfix(Loss=f'{running_avg_loss:.2f}')
 
@@ -224,9 +230,15 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
                         minibatch_iterator(data_iter, return_partial_minibatches=True),
                         enabled=parallel_minibatch_creation):
                     mb_loss = self.__model(**mb_data)
+
+                    loss = float(mb_loss.cpu())
+                    if math.isnan(loss):
+                        raise Exception('Validation Loss has a NaN value.')
+
+                    sum_epoch_loss += loss
                     num_minibatches += 1
                     num_samples += num_elements
-                    sum_epoch_loss += float(mb_loss.cpu())
+
                     progress_bar.update()
                     progress_bar.set_postfix(Loss=f'{sum_epoch_loss / num_minibatches:.2f}')
 
