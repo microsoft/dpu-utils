@@ -128,15 +128,21 @@ class ComponentTrainer(Generic[InputData, TensorizedData]):
         self.LOGGER.info('Model has %s parameters', self.__model.num_parameters())
         self.LOGGER.debug('Data Tensorization Started...')
 
+        def data_to_tensor_iterator(data):
+            for datapoint in data:
+                tensorized_datapoint = self.__model.load_data_from_sample(datapoint)
+                if tensorized_datapoint is not None:
+                    yield tensorized_datapoint
+
         def training_tensors():
             yield from ThreadedIterator(
-                original_iterator=(self.__model.load_data_from_sample(d) for d in training_data),
+                original_iterator=data_to_tensor_iterator(training_data),
                 max_queue_size=10 * self.__minibatch_size
             )
 
         def validation_tensors():
             yield from ThreadedIterator(
-                original_iterator=(self.__model.load_data_from_sample(d) for d in validation_data),
+                original_iterator=data_to_tensor_iterator(validation_data),
                 max_queue_size=10 * self.__minibatch_size
             )
 
