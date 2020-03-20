@@ -286,7 +286,7 @@ class LocalPath(RichPath):
         if self.__is_gzipped(self.path):
             fh = gzip.open(self.path, mode='rt', encoding='utf-8')
         else:
-            fh = open(self.path, 'rb', encoding='utf-8')
+            fh = open(self.path, 'rt', encoding='utf-8')
         try:
             for line in fh:
                 try:
