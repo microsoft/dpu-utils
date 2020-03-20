@@ -186,7 +186,7 @@ class RichPath(ABC):
             return self.read_as_pickle()
         if self.path.endswith('.npy') or self.path.endswith('.npz'):
             return self.read_as_numpy()
-        raise ValueError('File suffix must be .json, .json.gz, .pkl or .pkl.gz: %s' % self.path)
+        raise ValueError('File suffix must be .json, .json.gz, .pkl, .pkl.gz, .npy or .npz: %s' % self.path)
 
     def get_filtered_files_in_dir(self, file_pattern: str) -> List['RichPath']:
         return list(self.iterate_filtered_files_in_dir(file_pattern))

@@ -1,4 +1,5 @@
 """MLP layer."""
+import sys
 from typing import Callable, List, Optional, Union
 
 import tensorflow as tf
@@ -30,7 +31,16 @@ class MLP(tf.keras.layers.Layer):
         """
         super().__init__()
         if isinstance(hidden_layers, int):
-            self._hidden_layer_sizes = [out_size] * hidden_layers
+            if out_size == 1:
+                print(
+                    f"W: In {name}, was asked to use {hidden_layers} layers of size 1, which is most likely wrong."
+                    f" Switching to {hidden_layers} layers of size 32; to get hidden layers of size 1,"
+                    f" use hidden_layers=[1,...,1] explicitly.",
+                    file=sys.stderr,
+                )
+                self._hidden_layer_sizes = [32] * hidden_layers
+            else:
+                self._hidden_layer_sizes = [out_size] * hidden_layers
         else:
             self._hidden_layer_sizes = hidden_layers
 
