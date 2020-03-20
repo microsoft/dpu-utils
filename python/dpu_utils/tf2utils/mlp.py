@@ -33,10 +33,10 @@ class MLP(tf.keras.layers.Layer):
         if isinstance(hidden_layers, int):
             if out_size == 1:
                 print(
-                    f"W: Using {hidden_layers} layers of size 1, which is most likely wrong."
-                    f"   Switching to {hidden_layers} layers of size 32; to get hidden layers of size 1,"
-                    f"   use hidden_layers=[1,...,1] explicitly.",
-                    file=sys.stderr
+                    f"W: In {name}, was asked to use {hidden_layers} layers of size 1, which is most likely wrong."
+                    f" Switching to {hidden_layers} layers of size 32; to get hidden layers of size 1,"
+                    f" use hidden_layers=[1,...,1] explicitly.",
+                    file=sys.stderr,
                 )
                 self._hidden_layer_sizes = [32] * hidden_layers
             else:
