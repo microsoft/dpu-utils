@@ -84,6 +84,7 @@ class MLP(tf.keras.layers.Layer):
 
         super().build(input_shape)
 
+    @tf.function(experimental_relax_shapes=True)
     def call(self, input: tf.Tensor, training: bool) -> tf.Tensor:
         activations = input
         for layer in self._layers[:-1]:
