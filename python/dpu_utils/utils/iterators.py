@@ -4,6 +4,7 @@ import sys
 import queue
 import threading
 import traceback
+from itertools import islice
 from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, Union, Tuple
 
 T = TypeVar('T')
@@ -202,13 +203,16 @@ def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out
     """
     assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
 
-    buffer = []  # type: List[T]
-    for element in input_iterator:
-        buffer.append(element)
-        if len(buffer) > buffer_size:
-            random.shuffle(buffer)
-            for _ in range(out_slice_sizes):
-                yield buffer.pop()
+    # Ensure that this is an iterator that can be consumed exactly once.
+    input_iterator = iter(input_iterator)
 
+    buffer = list(islice(input_iterator, buffer_size))  # type: List[T]
     random.shuffle(buffer)
+
+    for element in input_iterator:
+        # Pick a random element in the buffer to yield and replace it with a new element
+        idx = random.randrange(buffer_size)
+        to_yield, buffer[idx] = buffer[idx], element
+        yield to_yield
+
     yield from buffer
