@@ -178,7 +178,8 @@ class BpeVocabulary(Sized):
                         f"--user_defined_symbols={self.user_defined_symbols}",
                         f"--control_symbols={self.control_symbols}",
                         f"--character_coverage={character_coverage}",
-                        "--minloglevel=1"
+                        "--minloglevel=1",
+                        "--hard_vocab_limit=false",
                     ]
 
             spm.SentencePieceTrainer.train(
