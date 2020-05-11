@@ -5,7 +5,7 @@ with open('../README.md') as f:
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.2.15',
+      version='0.2.16',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       long_description=long_description,
@@ -16,7 +16,7 @@ setuptools.setup(
       python_requires=">=3.6.1",
       include_package_data=True,
       install_requires=[
-          'azure-storage', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch'
+          'azure-storage', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece'
       ],
       scripts=['dpu_utils/codeutils/deduplication/deduplicationcli'],
       test_suite="tests",

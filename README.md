@@ -1,5 +1,6 @@
-# DPU Utilities
+# DPU Utilities ![PyPI - Python Version](https://img.shields.io/pypi/v/dpu-utils)
 [![Build Status](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_apis/build/status/Microsoft.dpu-utils?branchName=master)](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_build/latest?definitionId=3)
+
 
 This contains a set of utilities used across projects of the [DPU team](https://www.microsoft.com/en-us/research/project/program/).
 
