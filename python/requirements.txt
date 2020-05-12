@@ -1,7 +1,7 @@
 SetSimilaritySearch
 tqdm
 docopt
-azure-storage
+azure-storage-blob
 numpy
 typing_extensions
 sentencepiece
