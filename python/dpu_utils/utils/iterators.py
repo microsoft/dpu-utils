@@ -19,7 +19,7 @@ class ThreadedIterator(Iterator[T]):
         self.__is_enabled = enabled
         if enabled:
             self.__queue = queue.Queue(maxsize=max_queue_size)  # type: queue.Queue[Optional[T]]
-            self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator))
+            self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator), daemon=True)
             self.__thread.start()
         else:
             self.__original_iterator = original_iterator
