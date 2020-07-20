@@ -90,10 +90,10 @@ jobs:
   - script: dotnet pack
     workingDirectory: 'dotnet/'
 
-  - task: NuGetCommand@2
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
-    inputs:
-      command: push
-      nuGetFeedType: external
-      publishFeedCredentials: 'mabrocks-DPU.Utils-NuGet'
-      packagesToPush: 'dotnet/**/*.nupkg'
+#   - task: NuGetCommand@2
+#     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+#     inputs:
+#       command: push
+#       nuGetFeedType: external
+#       publishFeedCredentials: 'mabrocks-DPU.Utils-NuGet'
+#       packagesToPush: 'dotnet/**/*.nupkg'
