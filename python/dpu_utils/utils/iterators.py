@@ -192,26 +192,30 @@ class DoubleBufferedIterator(Iterator[T]):
         return next_element
 
 
-def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
+def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, rng: Optional[random.Random]=None) -> Iterator[T]:
     """
     Accept an iterator and return an approximate streaming (and memory efficient) shuffled iterator.
 
-    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled and
-    `out_slice_sizes` random elements from the buffer are returned. Thus, there is a good bias for
-    yielding the first set of elements in input early.
+    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled
+    and random elements are yielded from the buffer, while it continues to be replenished.
+
+    Notes:
+         * There is a good bias for yielding the first set of elements in input early.
+         * There is a delay for this wrapper to yield elements as the buffer needs to be filled in first
+            with `buffer_size` elements or the `input_iterator` to be exhausted.
 
     """
-    assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
-
+    if rng is None:
+        rng = random
     # Ensure that this is an iterator that can be consumed exactly once.
     input_iterator = iter(input_iterator)
 
     buffer = list(islice(input_iterator, buffer_size))  # type: List[T]
-    random.shuffle(buffer)
+    rng.shuffle(buffer)
 
     for element in input_iterator:
         # Pick a random element in the buffer to yield and replace it with a new element
-        idx = random.randrange(buffer_size)
+        idx = rng.randrange(buffer_size)
         to_yield, buffer[idx] = buffer[idx], element
         yield to_yield
 
