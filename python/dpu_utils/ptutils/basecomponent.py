@@ -195,7 +195,7 @@ class BaseComponent(ABC, nn.Module, Generic[InputData, TensorizedData]):
     def to(self, *args, **kwargs):
         super(BaseComponent, self).to(*args, **kwargs)
         # Ugly but seemingly necessary hack: implicit dependency on non-exposed interface.
-        device, _, _ = torch._C._nn._parse_to(*args, **kwargs)
+        device, _, _, _ = torch._C._nn._parse_to(*args, **kwargs)
         self.__device = device
         for child_module in self.children():
             child_module.to(*args, **kwargs)
