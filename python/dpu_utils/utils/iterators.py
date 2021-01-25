@@ -1,4 +1,5 @@
 import multiprocessing
+from functools import partial
 import random
 import sys
 import queue
@@ -105,20 +106,21 @@ class BufferedIterator(Iterable[T]):
 
         if enabled:
             self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process = multiprocessing.Process(target=lambda: self.__worker(original_iterator))
+            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator))
             self.__worker_process.start()
 
-    def __worker(self, original_iterator: Iterator[T]) -> None:
+    @staticmethod
+    def _worker(buffer, original_iterator: Iterator[T]) -> None:
         """Implementation of worker thread. Iterates over the original iterator, pulling results
         and putting them into a buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer.put(element, block=True)
-            self.__buffer.put(None, block=True)
+                buffer.put(element, block=True)
+            buffer.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            self.__buffer.put((e, tb), block=True)
+            buffer.put((e, tb), block=True)
 
     def __iter__(self):
         if not self.__is_enabled:
@@ -142,45 +144,43 @@ class DoubleBufferedIterator(Iterator[T]):
     Note: The inner iterable should *not* return None"""
 
     def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
-        def get_inner_iterable():
-            return self.__worker_inner(original_iterable)
-        def get_outer_iterable():
-            return self.__worker_outer()
         self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
         self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-        self.__worker_process_inner = multiprocessing.Process(target=get_inner_iterable)
-        self.__worker_process_outer = multiprocessing.Process(target=get_outer_iterable)
+        self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable))
+        self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer))
         self.__worker_process_inner.start()
         self.__worker_process_outer.start()
 
-    def __worker_inner(self, original_iterator: Iterable[T]) -> None:
+    @staticmethod
+    def _worker_inner(buffer_inner, original_iterator: Iterable[T]) -> None:
         """Consumes elements from the original iterator, putting them into an inner buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer_inner.put(element, block=True)
-            self.__buffer_inner.put(None, block=True)
+                buffer_inner.put(element, block=True)
+            buffer_inner.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(
                 traceback.format_tb(tb)
             )))
-            self.__buffer_inner.put((e, tb), block=True)
+            buffer_inner.put((e, tb), block=True)
 
-    def __worker_outer(self) -> None:
+    @staticmethod
+    def _worker_outer(buffer_inner, buffer_outer) -> None:
         """Consumes elements from the inner worker and just passes them through to the outer buffer."""
         try:
-            next_element = self.__buffer_inner.get(block=True)
+            next_element = buffer_inner.get(block=True)
             while next_element is not None:
-                self.__buffer_outer.put(next_element, block=True)
-                next_element = self.__buffer_inner.get(block=True)
-            self.__buffer_outer.put(next_element, block=True)
+                buffer_outer.put(next_element, block=True)
+                next_element = buffer_inner.get(block=True)
+            buffer_outer.put(next_element, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (
                 e, "".join(traceback.format_tb(tb))
             ))
-            self.__buffer_outer.put((e, tb), block=True)
+            buffer_outer.put((e, tb), block=True)
 
     def __iter__(self):
         return self

@@ -5,3 +5,4 @@ azure-storage==0.36.0
 numpy
 typing_extensions
 sentencepiece==0.1.92
+cffi
