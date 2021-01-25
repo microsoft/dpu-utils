@@ -142,10 +142,14 @@ class DoubleBufferedIterator(Iterator[T]):
     Note: The inner iterable should *not* return None"""
 
     def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
+        def get_inner_iterable(original_iterable):
+            return self.__worker_inner(original_iterable)
+        def get_outer_iterable():
+            return self.__worker_outer()
         self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
         self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-        self.__worker_process_inner = multiprocessing.Process(target=lambda: self.__worker_inner(original_iterable))
-        self.__worker_process_outer = multiprocessing.Process(target=lambda: self.__worker_outer())
+        self.__worker_process_inner = multiprocessing.Process(target=get_inner_iterable(original_iterable))
+        self.__worker_process_outer = multiprocessing.Process(target=get_outer_iterable())
         self.__worker_process_inner.start()
         self.__worker_process_outer.start()
 
