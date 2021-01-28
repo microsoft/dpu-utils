@@ -19,7 +19,7 @@ from functools import total_ordering
 from typing import Any, List, Optional, Iterable, Callable
 
 import numpy
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob.blockblobservice import BlockBlobService
 from azure.common import AzureHttpError
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
