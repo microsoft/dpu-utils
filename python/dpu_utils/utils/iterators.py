@@ -1,5 +1,4 @@
 import multiprocessing
-import os
 from functools import partial
 import random
 import sys
