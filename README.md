@@ -69,12 +69,6 @@ Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](http
 
 These models have not been tested with TF 2.0.
 
-##### PyTorch Utilities `dpu_utils.ptutils`
-* [`BaseComponent`](python/dpu_utils/ptutils/basecomponent.py) a wrapper abstract class around `nn.Module` that 
-   takes care of essential elements of most neural network components.
-* [`ComponentTrainer`](python/dpu_utils/ptutils/basecomponent.py) a training loop for `BaseComponent`s.
-
-
 ### Command-line tools
 
 #### Approximate Duplicate Code Detection
