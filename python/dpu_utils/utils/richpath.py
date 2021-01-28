@@ -19,8 +19,8 @@ from functools import total_ordering
 from typing import Any, List, Optional, Iterable, Callable
 
 import numpy
-from azure.storage.blob import BlockBlobService
-from azure.common import AzureHttpError
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import ContainerClient
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
 
@@ -72,30 +72,35 @@ class RichPath(ABC):
         in the path to the .json configuration.
         """
         if path.startswith(AZURE_PATH_PREFIX):
-            assert azure_info_path is not None, "An AzurePath cannot be created when azure_info_path is None."
             # Strip off the AZURE_PATH_PREFIX:
             path = path[len(AZURE_PATH_PREFIX):]
             account_name, container_name, path = path.split('/', 2)
 
-            with open(azure_info_path, 'r') as azure_info_file:
-                azure_info = json.load(azure_info_file)
-            account_info = azure_info.get(account_name)
-            if account_info is None:
-                raise Exception("Could not find access information for account '%s'!" % (account_name,))
+            if azure_info_path is not None:
+                with open(azure_info_path, 'r') as azure_info_file:
+                    azure_info = json.load(azure_info_file)
+                account_info = azure_info.get(account_name)
+                if account_info is None:
+                    raise Exception("Could not find access information for account '%s'!" % (account_name,))
 
-            sas_token = account_info.get('sas_token')
-            account_key = account_info.get('account_key')
-            if sas_token is not None:
-                assert not sas_token.startswith('?'), 'SAS tokens should not start with "?". Just delete it.'  #  https://github.com/Azure/azure-storage-python/issues/301
-                blob_service = BlockBlobService(account_name=account_name,
-                                                sas_token=sas_token)
-            elif account_key is not None:
-                blob_service = BlockBlobService(account_name=account_name,
-                                                account_key=account_key)
+                sas_token = account_info.get('sas_token')
+                account_key = account_info.get('account_key')
+                if sas_token is not None:
+                    token_credential = sas_token
+                elif account_key is not None:
+                    token_credential = account_key
+                else:
+                    raise Exception("Access to Azure storage account '%s' with azure_info_path requires either account_key or sas_token!" % (
+                        account_name,
+                    ))
             else:
-                raise Exception("Access to Azure storage account '%s' requires either account_key or sas_token!" % (
-                    account_name,
-                ))
+                token_credential = DefaultAzureCredential()
+
+            container_client = ContainerClient(
+                # This is the correct URI for all non-sovereign clouds.
+                account_url="https://%s.blob.core.windows.net/" % account_name,
+                container_name=container_name,
+                credential=token_credential)
 
             # ERROR is too verbose, in particular when downloading based on etags an error is emitted when blob
             # download is aborted.
@@ -113,8 +118,7 @@ class RichPath(ABC):
                         return env_var_name
                 cache_location = re.sub('\${([^}]+)}', replace_by_env_var, cache_location)
             return AzurePath(path,
-                             azure_container_name=container_name,
-                             azure_blob_service=blob_service,
+                             azure_container_client=container_client,
                              cache_location=cache_location)
         else:
             return LocalPath(path)
@@ -352,27 +356,25 @@ class LocalPath(RichPath):
 
 
 class AzurePath(RichPath):
-    def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
+    def __init__(self, path: str, azure_container_client: ContainerClient,
                  cache_location: Optional[str]):
         super().__init__(path)
-        self.__container_name = azure_container_name
-        self.__blob_service = azure_blob_service
+        self.__container_client = azure_container_client
         self.__cache_location = cache_location
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
                 and self.path == other.path
-                and self.__container_name == other.__container_name
-                and self.__blob_service == other.__blob_service)
+                and self.__container_client == other.__container_client)
 
     def __hash__(self):
         return hash(self.path)
 
     def __repr__(self):
-        return "%s%s/%s/%s" % (AZURE_PATH_PREFIX, self.__blob_service.account_name, self.__container_name, self.path)
+        return "%s%s/%s/%s" % (AZURE_PATH_PREFIX, self.__container_client.account_name, self.__container_client.container_name, self.path)
 
     def is_dir(self) -> bool:
-        blob_list = self.__blob_service.list_blobs(self.__container_name, self.path, num_results=1)
+        blob_list = self.__container_client.list_blobs(self.path)
         try:
             blob = next(iter(blob_list))
             if blob.name == self.path:
@@ -380,7 +382,7 @@ class AzurePath(RichPath):
                 return False
             return True
         except StopIteration:
-            return False # This path does not exist, return False by convention, similar to os.path.isdir()
+            return False  # This path does not exist, return False by convention, similar to os.path.isdir()
 
     def is_file(self) -> bool:
         return not self.is_dir() and self.exists()
@@ -403,7 +405,7 @@ class AzurePath(RichPath):
 
     @property
     def __cached_file_path(self) -> str:
-        return os.path.join(self.__cache_location, self.__container_name, self.path)
+        return os.path.join(self.__cache_location, self.__container_client.container_name, self.path)
 
     def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
         cached_file_path = self.__cached_file_path
@@ -418,7 +420,9 @@ class AzurePath(RichPath):
             # The next invocation to the blob service may fail and delete the current file. Store it elsewhere
             new_filepath = cached_file_path+'.new'
 
-            blob = self.__blob_service.get_blob_to_path(self.__container_name, self.path, new_filepath,
+            blob_client = self.__container_client.get_blob_client(self.path)
+            blob_client.download_blob(etag=old_etag)
+            blob = self.__blob_service.get_blob_to_path(self.path, new_filepath,
                                                         if_none_match=old_etag)
             os.rename(new_filepath, cached_file_path)
             with open(cached_file_path_etag, 'w') as f:
