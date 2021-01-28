@@ -17,7 +17,7 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt && pip install torch
+  - script: python -m pip install --upgrade pip && pip install -r requirements.txt && pip install torch==1.6.0
     displayName: 'Install dependencies'
     workingDirectory: 'python/'
 
@@ -90,10 +90,10 @@ jobs:
   - script: dotnet pack
     workingDirectory: 'dotnet/'
 
-  - task: NuGetCommand@2
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
-    inputs:
-      command: push
-      nuGetFeedType: external
-      publishFeedCredentials: 'mabrocks-DPU.Utils-NuGet'
-      packagesToPush: 'dotnet/**/*.nupkg'
+#   - task: NuGetCommand@2
+#     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+#     inputs:
+#       command: push
+#       nuGetFeedType: external
+#       publishFeedCredentials: 'mabrocks-DPU.Utils-NuGet'
+#       packagesToPush: 'dotnet/**/*.nupkg'

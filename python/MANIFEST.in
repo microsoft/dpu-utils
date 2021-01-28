@@ -1,3 +1,4 @@
 include *.txt
 include LICENSE
 recursive-include dpu_utils *.txt
+recursive-include dpu_utils py.typed

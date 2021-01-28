@@ -19,7 +19,7 @@ from functools import total_ordering
 from typing import Any, List, Optional, Iterable, Callable
 
 import numpy
-from azure.storage.blob import BlockBlobService
+from azure.storage.blob.blockblobservice import BlockBlobService
 from azure.common import AzureHttpError
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
@@ -186,7 +186,7 @@ class RichPath(ABC):
             return self.read_as_pickle()
         if self.path.endswith('.npy') or self.path.endswith('.npz'):
             return self.read_as_numpy()
-        raise ValueError('File suffix must be .json, .json.gz, .pkl or .pkl.gz: %s' % self.path)
+        raise ValueError('File suffix must be .json, .json.gz, .pkl, .pkl.gz, .npy or .npz: %s' % self.path)
 
     def get_filtered_files_in_dir(self, file_pattern: str) -> List['RichPath']:
         return list(self.iterate_filtered_files_in_dir(file_pattern))
@@ -286,7 +286,7 @@ class LocalPath(RichPath):
         if self.__is_gzipped(self.path):
             fh = gzip.open(self.path, mode='rt', encoding='utf-8')
         else:
-            fh = open(self.path, 'rb', encoding='utf-8')
+            fh = open(self.path, 'rt', encoding='utf-8')
         try:
             for line in fh:
                 try:

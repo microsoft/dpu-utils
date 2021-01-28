@@ -1,9 +1,11 @@
 import multiprocessing
+from functools import partial
 import random
 import sys
 import queue
 import threading
 import traceback
+from itertools import islice
 from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, Union, Tuple
 
 T = TypeVar('T')
@@ -18,7 +20,7 @@ class ThreadedIterator(Iterator[T]):
         self.__is_enabled = enabled
         if enabled:
             self.__queue = queue.Queue(maxsize=max_queue_size)  # type: queue.Queue[Optional[T]]
-            self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator))
+            self.__thread = threading.Thread(target=lambda: self.__worker(self.__queue, original_iterator), daemon=True)
             self.__thread.start()
         else:
             self.__original_iterator = original_iterator
@@ -104,20 +106,21 @@ class BufferedIterator(Iterable[T]):
 
         if enabled:
             self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process = multiprocessing.Process(target=lambda: self.__worker(original_iterator))
+            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator))
             self.__worker_process.start()
 
-    def __worker(self, original_iterator: Iterator[T]) -> None:
+    @staticmethod
+    def _worker(buffer, original_iterator: Iterator[T]) -> None:
         """Implementation of worker thread. Iterates over the original iterator, pulling results
         and putting them into a buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer.put(element, block=True)
-            self.__buffer.put(None, block=True)
+                buffer.put(element, block=True)
+            buffer.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            self.__buffer.put((e, tb), block=True)
+            buffer.put((e, tb), block=True)
 
     def __iter__(self):
         if not self.__is_enabled:
@@ -143,39 +146,41 @@ class DoubleBufferedIterator(Iterator[T]):
     def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
         self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
         self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-        self.__worker_process_inner = multiprocessing.Process(target=lambda: self.__worker_inner(original_iterable))
-        self.__worker_process_outer = multiprocessing.Process(target=lambda: self.__worker_outer())
+        self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable))
+        self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer))
         self.__worker_process_inner.start()
         self.__worker_process_outer.start()
 
-    def __worker_inner(self, original_iterator: Iterable[T]) -> None:
+    @staticmethod
+    def _worker_inner(buffer_inner, original_iterator: Iterable[T]) -> None:
         """Consumes elements from the original iterator, putting them into an inner buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer_inner.put(element, block=True)
-            self.__buffer_inner.put(None, block=True)
+                buffer_inner.put(element, block=True)
+            buffer_inner.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(
                 traceback.format_tb(tb)
             )))
-            self.__buffer_inner.put((e, tb), block=True)
+            buffer_inner.put((e, tb), block=True)
 
-    def __worker_outer(self) -> None:
+    @staticmethod
+    def _worker_outer(buffer_inner, buffer_outer) -> None:
         """Consumes elements from the inner worker and just passes them through to the outer buffer."""
         try:
-            next_element = self.__buffer_inner.get(block=True)
+            next_element = buffer_inner.get(block=True)
             while next_element is not None:
-                self.__buffer_outer.put(next_element, block=True)
-                next_element = self.__buffer_inner.get(block=True)
-            self.__buffer_outer.put(next_element, block=True)
+                buffer_outer.put(next_element, block=True)
+                next_element = buffer_inner.get(block=True)
+            buffer_outer.put(next_element, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (
                 e, "".join(traceback.format_tb(tb))
             ))
-            self.__buffer_outer.put((e, tb), block=True)
+            buffer_outer.put((e, tb), block=True)
 
     def __iter__(self):
         return self
@@ -191,24 +196,31 @@ class DoubleBufferedIterator(Iterator[T]):
         return next_element
 
 
-def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
+def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, rng: Optional[random.Random]=None) -> Iterator[T]:
     """
     Accept an iterator and return an approximate streaming (and memory efficient) shuffled iterator.
 
-    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled and
-    `out_slice_sizes` random elements from the buffer are returned. Thus, there is a good bias for
-    yielding the first set of elements in input early.
+    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled
+    and random elements are yielded from the buffer, while it continues to be replenished.
+
+    Notes:
+         * There is a good bias for yielding the first set of elements in input early.
+         * There is a delay for this wrapper to yield elements as the buffer needs to be filled in first
+            with `buffer_size` elements or the `input_iterator` to be exhausted.
 
     """
-    assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
+    if rng is None:
+        rng = random
+    # Ensure that this is an iterator that can be consumed exactly once.
+    input_iterator = iter(input_iterator)
 
-    buffer = []  # type: List[T]
+    buffer = list(islice(input_iterator, buffer_size))  # type: List[T]
+    rng.shuffle(buffer)
+
     for element in input_iterator:
-        buffer.append(element)
-        if len(buffer) > buffer_size:
-            random.shuffle(buffer)
-            for _ in range(out_slice_sizes):
-                yield buffer.pop()
+        # Pick a random element in the buffer to yield and replace it with a new element
+        idx = rng.randrange(buffer_size)
+        to_yield, buffer[idx] = buffer[idx], element
+        yield to_yield
 
-    random.shuffle(buffer)
     yield from buffer
