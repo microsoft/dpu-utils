@@ -1,4 +1,5 @@
 import multiprocessing
+from functools import partial
 import random
 import sys
 import queue
@@ -49,7 +50,7 @@ class ThreadedIterator(Iterator[T]):
         if self.__is_enabled:
             return self
         else:
-            return self.__original_iterator
+            return iter(self.__original_iterator)
 
 
 class MultiWorkerCallableIterator(Iterable):
@@ -64,25 +65,28 @@ class MultiWorkerCallableIterator(Iterable):
             self.__num_elements += 1
         self.__out_queue = queue.Queue(maxsize=max_queue_size) if use_threads else multiprocessing.Queue(
             maxsize=max_queue_size
-        ) # type: Union[queue.Queue, multiprocessing.Queue]
+        )  # type: Union[queue.Queue, multiprocessing.Queue]
         self.__threads = [
-            threading.Thread(target=lambda: self.__worker(worker_callable)) if use_threads
-            else multiprocessing.Process(target=lambda: self.__worker(worker_callable)) for _ in range(num_workers)
+            threading.Thread(target=lambda: MultiWorkerCallableIterator._worker(self.__in_queue, self.__out_queue, worker_callable)) if use_threads
+            else multiprocessing.Process(
+                target=partial(MultiWorkerCallableIterator._worker, self.__in_queue, self.__out_queue, worker_callable)
+            ) for _ in range(num_workers)
         ]  # type: List[Union[threading.Thread, multiprocessing.Process]]
         for worker in self.__threads:
             worker.start()
 
-    def __worker(self, worker_callable):
+    @staticmethod
+    def _worker(in_queue, out_queue, worker_callable):
         try:
-            while not self.__in_queue.empty():
-                next_element = self.__in_queue.get(block=False)
+            while not in_queue.empty():
+                next_element = in_queue.get(block=False)
                 result = worker_callable(*next_element)
-                self.__out_queue.put(result)
+                out_queue.put(result)
         except queue.Empty:
             pass
         except Exception as e:
             _, __, tb = sys.exc_info()
-            self.__out_queue.put((e, tb), block=True)
+            out_queue.put((e, tb), block=True)
 
     def __iter__(self):
         for _ in range(self.__num_elements):
@@ -105,20 +109,21 @@ class BufferedIterator(Iterable[T]):
 
         if enabled:
             self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process = multiprocessing.Process(target=lambda: self.__worker(original_iterator))
+            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator))
             self.__worker_process.start()
 
-    def __worker(self, original_iterator: Iterator[T]) -> None:
+    @staticmethod
+    def _worker(buffer, original_iterator: Iterator[T]) -> None:
         """Implementation of worker thread. Iterates over the original iterator, pulling results
         and putting them into a buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer.put(element, block=True)
-            self.__buffer.put(None, block=True)
+                buffer.put(element, block=True)
+            buffer.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
-            self.__buffer.put((e, tb), block=True)
+            buffer.put((e, tb), block=True)
 
     def __iter__(self):
         if not self.__is_enabled:
@@ -134,6 +139,7 @@ class BufferedIterator(Iterable[T]):
 
         self.__worker_process.join()
 
+
 class DoubleBufferedIterator(Iterator[T]):
     """An iterator object that wraps double buffering around an iterable sequence.
     This avoids waits in downstream applications if each step of the inner iterable can take a long while,
@@ -141,45 +147,55 @@ class DoubleBufferedIterator(Iterator[T]):
 
     Note: The inner iterable should *not* return None"""
 
-    def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5):
-        self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-        self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-        self.__worker_process_inner = multiprocessing.Process(target=lambda: self.__worker_inner(original_iterable))
-        self.__worker_process_outer = multiprocessing.Process(target=lambda: self.__worker_outer())
-        self.__worker_process_inner.start()
-        self.__worker_process_outer.start()
+    def __init__(self, original_iterable: Iterable[T], max_queue_size_inner: int=20, max_queue_size_outer: int=5,
+                        enabled: bool=True):
+        if enabled:
+            self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
+            self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
+            self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable))
+            self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer))
+            self.__worker_process_inner.start()
+            self.__worker_process_outer.start()
+            self.__original_iterable = None
+        else:
+            self.__original_iterable = original_iterable
 
-    def __worker_inner(self, original_iterator: Iterable[T]) -> None:
+    @staticmethod
+    def _worker_inner(buffer_inner, original_iterator: Iterable[T]) -> None:
         """Consumes elements from the original iterator, putting them into an inner buffer."""
         try:
             for element in original_iterator:
                 assert element is not None, 'By convention, iterator elements must not be None'
-                self.__buffer_inner.put(element, block=True)
-            self.__buffer_inner.put(None, block=True)
+                buffer_inner.put(element, block=True)
+            buffer_inner.put(None, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in inner worker of DoubleBufferedIterator:\n %s" % (e, "".join(
                 traceback.format_tb(tb)
             )))
-            self.__buffer_inner.put((e, tb), block=True)
+            buffer_inner.put((e, tb), block=True)
 
-    def __worker_outer(self) -> None:
+    @staticmethod
+    def _worker_outer(buffer_inner, buffer_outer) -> None:
         """Consumes elements from the inner worker and just passes them through to the outer buffer."""
         try:
-            next_element = self.__buffer_inner.get(block=True)
+            next_element = buffer_inner.get(block=True)
             while next_element is not None:
-                self.__buffer_outer.put(next_element, block=True)
-                next_element = self.__buffer_inner.get(block=True)
-            self.__buffer_outer.put(next_element, block=True)
+                buffer_outer.put(next_element, block=True)
+                next_element = buffer_inner.get(block=True)
+            buffer_outer.put(next_element, block=True)
         except Exception as e:
             _, __, tb = sys.exc_info()
             print("!!! Exception '%s' in outer worker of DoubleBufferedIterator:\n %s" % (
                 e, "".join(traceback.format_tb(tb))
             ))
-            self.__buffer_outer.put((e, tb), block=True)
+            buffer_outer.put((e, tb), block=True)
 
     def __iter__(self):
-        return self
+        if self.__original_iterable is None:
+            return self
+        else:
+            return iter(self.__original_iterable)
 
     def __next__(self):
         next_element = self.__buffer_outer.get(block=True)
@@ -192,26 +208,30 @@ class DoubleBufferedIterator(Iterator[T]):
         return next_element
 
 
-def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, out_slice_sizes: int = 500) -> Iterator[T]:
+def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, rng: Optional[random.Random]=None) -> Iterator[T]:
     """
     Accept an iterator and return an approximate streaming (and memory efficient) shuffled iterator.
 
-    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled and
-    `out_slice_sizes` random elements from the buffer are returned. Thus, there is a good bias for
-    yielding the first set of elements in input early.
+    To achieve (approximate) shuffling a buffer of elements is stored. Once the buffer is full, it is shuffled
+    and random elements are yielded from the buffer, while it continues to be replenished.
+
+    Notes:
+         * There is a good bias for yielding the first set of elements in input early.
+         * There is a delay for this wrapper to yield elements as the buffer needs to be filled in first
+            with `buffer_size` elements or the `input_iterator` to be exhausted.
 
     """
-    assert out_slice_sizes <= buffer_size, 'out_slices_size cannot be larger than buffer_size.'
-
+    if rng is None:
+        rng = random
     # Ensure that this is an iterator that can be consumed exactly once.
     input_iterator = iter(input_iterator)
 
     buffer = list(islice(input_iterator, buffer_size))  # type: List[T]
-    random.shuffle(buffer)
+    rng.shuffle(buffer)
 
     for element in input_iterator:
         # Pick a random element in the buffer to yield and replace it with a new element
-        idx = random.randrange(buffer_size)
+        idx = rng.randrange(buffer_size)
         to_yield, buffer[idx] = buffer[idx], element
         yield to_yield
 

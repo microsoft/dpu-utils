@@ -24,6 +24,7 @@ from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import ContainerClient
 
+
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
 
 AZURE_PATH_PREFIX = "azure://"
