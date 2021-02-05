@@ -22,8 +22,8 @@ jobs:
     workingDirectory: 'python/'
 
   - task: Bash@3
-      displayName: "Install Azurite"
-      inputs:
+    displayName: "Install Azurite"
+    inputs:
         targetType: 'inline'
         script: 'sudo npm install -g azurite'
 
