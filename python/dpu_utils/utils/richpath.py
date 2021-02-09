@@ -563,12 +563,14 @@ class AzurePath(RichPath):
             f = tempfile.NamedTemporaryFile(suffix='.pkl.gz', delete=False)
         else:
             raise ValueError('File suffix must be .json.gz, .jsonl.gz or .pkl.gz: %s' % self.path)
-        local_temp_file = LocalPath(f.name)
-        f.close()
-        local_temp_file.save_as_compressed_file(data)
-        with open(local_temp_file.path, 'rb') as local_fp:
-            self.__blob_client.upload_blob(local_fp, overwrite=True)
-        os.unlink(local_temp_file.path)
+        try:
+            local_temp_file = LocalPath(f.name)
+            f.close()
+            local_temp_file.save_as_compressed_file(data)
+            with open(local_temp_file.path, 'rb') as local_fp:
+                self.__blob_client.upload_blob(local_fp, overwrite=True)
+        finally:
+            os.unlink(local_temp_file.path)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
