@@ -9,6 +9,7 @@ from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import ContainerClient
 
 from dpu_utils.utils import RichPath
+from dpu_utils.utils import save_jsonl_gz
 
 
 class AuthType(Enum):
@@ -209,3 +210,34 @@ class TestRichPath(unittest.TestCase):
             self.assertListEqual(elements, read_elements)
             remote_path2.delete()
 
+    def test_cache_correctness(self):
+        with self._setup_test() as az_info:
+            random_elements = list(range(100))
+            remote_path = RichPath.create(f"azure://devstoreaccount1/test1/compressed/data.jsonl.gz", az_info)
+            remote_path.save_as_compressed_file(random_elements)
+
+            # Read once
+            read_nums = list(remote_path.read_by_file_suffix())
+            self.assertListEqual(read_nums, random_elements)
+
+            # Hit Cache
+            read_nums = list(remote_path.read_by_file_suffix())
+            self.assertListEqual(read_nums, random_elements)
+            self.assertTrue(remote_path.exists())
+            self.assertTrue(remote_path.is_file())
+
+            # Update file through other means, and ensure that cache is appropriately invalidated.
+            new_elements = list(range(500))
+            with TemporaryDirectory() as tmp:
+                path = os.path.join(tmp, 'tst.jsonl.gz')
+                save_jsonl_gz(new_elements, path)
+                container_client = ContainerClient.from_connection_string(self.AZURITE_DEVELOPMENT_CONNECTION_STRING,
+                                                                          "test1")
+                blob_client = container_client.get_blob_client("compressed/data.jsonl.gz")
+                with open(path, 'rb') as f:
+                    blob_client.upload_blob(f, overwrite=True)
+
+            read_nums = list(remote_path.read_by_file_suffix())
+            self.assertListEqual(read_nums, new_elements)
+            self.assertTrue(remote_path.exists())
+            self.assertTrue(remote_path.is_file())
