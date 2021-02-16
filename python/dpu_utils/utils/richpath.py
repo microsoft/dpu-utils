@@ -1,6 +1,7 @@
 import binascii
 import gzip
 import json
+import logging
 import os
 import glob
 import fnmatch
@@ -9,7 +10,6 @@ import time
 import zlib
 import io
 import pickle
-import logging
 import tempfile
 import re
 
@@ -19,8 +19,11 @@ from functools import total_ordering
 from typing import Any, List, Optional, Iterable, Callable
 
 import numpy
-from azure.storage.blob.blockblobservice import BlockBlobService
-from azure.common import AzureHttpError
+from azure.core import MatchConditions
+from azure.core.exceptions import HttpResponseError
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import ContainerClient
+
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
 
@@ -34,13 +37,41 @@ class RichPath(ABC):
     RichPath is an abstraction layer of local and remote paths allowing unified access
     of both local and remote files. Currently, only local and Azure blob paths are supported.
     
-    To use Azure paths, a .json configuration file needs to be passed in the
+    To use Azure paths, if the current environment is set up you need no further action.
+
+    See https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential for
+    potential default configuration (az login, Service Principals, ManagedIdentity, etc.
+
+    Alternatively a .json configuration file needs to be passed in the
     `RichPath.create()` function. The file has the format:
     
     ```
     {
         "storage_account_name": {
             "sas_token": "the secret",
+            "endpoint": "url if this is not a *.blob.core.windows.net endpoint"
+            "cache_location": "optional location to cache blobs locally"
+        }
+        ...
+    }
+    ```
+    or
+    ```
+    {
+        "storage_account_name": {
+            "connection_string" : "the_string",
+            "endpoint": "url if this is not a *.blob.core.windows.net endpoint"
+            "cache_location": "optional location to cache blobs locally"
+        }
+        ...
+    }
+    ```
+    or
+    ```
+    {
+        "storage_account_name": {
+            "account_key": "they key"
+            "endpoint": "url if this is not a *.blob.core.windows.net endpoint"
             "cache_location": "optional location to cache blobs locally"
         }
         ...
@@ -50,7 +81,11 @@ class RichPath(ABC):
     Multiple storage accounts can be placed in a single file. This allows to address blobs
     and "directories" as `azure://storage_account_name/container_name/path/to/blob`. The
     Azure SAS token can be retrieved from the Azure portal or from the Azure Storage Explorer.
-    
+
+    The `cache_location` may contain environment variables, e.g. `/path/to/${SOME_VAR}/dir`
+
+    that will be replaced appropriately.
+
     If an external library requires a local path, you can ensure that a `RichPath`
     object represents a local (possibly cached) object by returning
     ```
@@ -66,43 +101,56 @@ class RichPath(ABC):
         return self.__path
 
     @staticmethod
-    def create(path: str, azure_info_path: Optional[str]=None):
+    def create(path: str, azure_info_path: Optional[str]=None) -> 'RichPath':
         """This creates a RichPath object based on the input path.
         To create a remote path, just prefix it appropriately and pass
         in the path to the .json configuration.
         """
         if path.startswith(AZURE_PATH_PREFIX):
-            assert azure_info_path is not None, "An AzurePath cannot be created when azure_info_path is None."
             # Strip off the AZURE_PATH_PREFIX:
             path = path[len(AZURE_PATH_PREFIX):]
             account_name, container_name, path = path.split('/', 2)
 
-            with open(azure_info_path, 'r') as azure_info_file:
-                azure_info = json.load(azure_info_file)
-            account_info = azure_info.get(account_name)
-            if account_info is None:
-                raise Exception("Could not find access information for account '%s'!" % (account_name,))
+            if azure_info_path is not None:
+                with open(azure_info_path, 'r') as azure_info_file:
+                   azure_info = json.load(azure_info_file)
+                azure_info = azure_info.get(account_name)
+                if azure_info is None:
+                   raise Exception("Could not find access information for account '%s'!" % (account_name,))
 
-            sas_token = account_info.get('sas_token')
-            account_key = account_info.get('account_key')
-            if sas_token is not None:
-                assert not sas_token.startswith('?'), 'SAS tokens should not start with "?". Just delete it.'  #  https://github.com/Azure/azure-storage-python/issues/301
-                blob_service = BlockBlobService(account_name=account_name,
-                                                sas_token=sas_token)
-            elif account_key is not None:
-                blob_service = BlockBlobService(account_name=account_name,
-                                                account_key=account_key)
+                account_endpoint = azure_info.get('endpoint', "https://%s.blob.core.windows.net/" % account_name)
+                cache_location = azure_info.get('cache_location')
+                connection_string =  azure_info.get('connection_string')
+                sas_token = azure_info.get('sas_token')
+                account_key = azure_info.get('account_key')
+
+                if connection_string is not None:
+                    container_client = ContainerClient.from_connection_string(connection_string, container_name)
+                elif sas_token is not None:
+                    query_string: str = sas_token
+                    if not query_string.startswith('?'):
+                        query_string = '?' + query_string
+                    container_client = ContainerClient.from_container_url(f"{account_endpoint}/{container_name}{query_string}")
+                elif account_key is not None:
+                    connection_string = f"AccountName={account_name};AccountKey={account_key};BlobEndpoint={account_endpoint};"
+                    container_client = ContainerClient.from_connection_string(connection_string, container_name)
+
+                else:
+                    raise Exception("Access to Azure storage account '%s' with azure_info_path requires either account_key or sas_token!" % (
+                        account_name,
+                    ))
             else:
-                raise Exception("Access to Azure storage account '%s' requires either account_key or sas_token!" % (
-                    account_name,
-                ))
+                token_credential = DefaultAzureCredential()
+                # This is the correct URI for all non-sovereign clouds or emulators.
+                account_endpoint = "https://%s.blob.core.windows.net/" % account_name
+                cache_location = None
 
-            # ERROR is too verbose, in particular when downloading based on etags an error is emitted when blob
-            # download is aborted.
-            logging.getLogger('azure.storage').setLevel(logging.CRITICAL)
+                container_client = ContainerClient(
+                    account_url=account_endpoint,
+                    container_name=container_name,
+                    credential=token_credential)
 
             # Replace environment variables in the cache location
-            cache_location = account_info.get('cache_location')
             if cache_location is not None:
                 def replace_by_env_var(m) -> str:
                     env_var_name = m.group(1)
@@ -111,10 +159,9 @@ class RichPath(ABC):
                         return env_var_value
                     else:
                         return env_var_name
-                cache_location = re.sub('\${([^}]+)}', replace_by_env_var, cache_location)
+                cache_location = re.sub('\\${([^}]+)}', replace_by_env_var, cache_location)
             return AzurePath(path,
-                             azure_container_name=container_name,
-                             azure_blob_service=blob_service,
+                             azure_container_client=container_client,
                              cache_location=cache_location)
         else:
             return LocalPath(path)
@@ -217,6 +264,10 @@ class RichPath(ABC):
 
     @abstractmethod
     def relpath(self, base: 'RichPath') -> str:
+        pass
+
+    @abstractmethod
+    def delete(self, missing_ok: bool=True) -> None:
         pass
 
     def copy_from(self, source_path: 'RichPath', overwrite_ok: bool=True) -> None:
@@ -343,44 +394,50 @@ class LocalPath(RichPath):
     def exists(self) -> bool:
         return os.path.exists(self.path)
 
+    def delete(self, missing_ok: bool=True) -> None:
+        try:
+            os.unlink(self.path)
+        except FileNotFoundError:
+            if not missing_ok:
+                raise
+
     def to_local_path(self) -> 'LocalPath':
         return self
 
     def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
-        os.makedirs(os.path.dirname(self.path) ,exist_ok=True)
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
         shutil.copy2(src=local_file.path, dst=self.path)
 
 
 class AzurePath(RichPath):
-    def __init__(self, path: str, azure_container_name: str, azure_blob_service: BlockBlobService,
+    def __init__(self, path: str, azure_container_client: ContainerClient,
                  cache_location: Optional[str]):
         super().__init__(path)
-        self.__container_name = azure_container_name
-        self.__blob_service = azure_blob_service
+        self.__container_client = azure_container_client
+        self.__blob_client = self.__container_client.get_blob_client(self.path)
+
         self.__cache_location = cache_location
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
                 and self.path == other.path
-                and self.__container_name == other.__container_name
-                and self.__blob_service == other.__blob_service)
+                and self.__blob_client == other.__blob_client)
 
     def __hash__(self):
         return hash(self.path)
 
     def __repr__(self):
-        return "%s%s/%s/%s" % (AZURE_PATH_PREFIX, self.__blob_service.account_name, self.__container_name, self.path)
+        return "%s%s/%s/%s" % (AZURE_PATH_PREFIX, self.__container_client.account_name, self.__container_client.container_name, self.path)
 
     def is_dir(self) -> bool:
-        blob_list = self.__blob_service.list_blobs(self.__container_name, self.path, num_results=1)
-        try:
-            blob = next(iter(blob_list))
+        blob_list = self.__container_client.list_blobs(self.path)
+        for blob in blob_list:
             if blob.name == self.path:
                 # Listing this, yields the path itself, thus it's a file.
                 return False
             return True
-        except StopIteration:
-            return False # This path does not exist, return False by convention, similar to os.path.isdir()
+        else:
+            return False  # This path does not exist, return False by convention, similar to os.path.isdir()
 
     def is_file(self) -> bool:
         return not self.is_dir() and self.exists()
@@ -403,7 +460,7 @@ class AzurePath(RichPath):
 
     @property
     def __cached_file_path(self) -> str:
-        return os.path.join(self.__cache_location, self.__container_name, self.path)
+        return os.path.join(self.__cache_location, self.__container_client.container_name, self.path)
 
     def __cache_file_locally(self, num_retries: int=1) -> LocalPath:
         cached_file_path = self.__cached_file_path
@@ -418,16 +475,19 @@ class AzurePath(RichPath):
             # The next invocation to the blob service may fail and delete the current file. Store it elsewhere
             new_filepath = cached_file_path+'.new'
 
-            blob = self.__blob_service.get_blob_to_path(self.__container_name, self.path, new_filepath,
-                                                        if_none_match=old_etag)
+            if old_etag is not None:
+                downloader = self.__blob_client.download_blob(etag=old_etag, match_condition=MatchConditions.IfModified)
+            else:
+                downloader = self.__blob_client.download_blob()
+            with open(new_filepath, 'wb') as f:
+                downloader.readinto(f)
+
             os.rename(new_filepath, cached_file_path)
             with open(cached_file_path_etag, 'w') as f:
-                f.write(blob.properties.etag)
-        except AzureHttpError as aze:
-            os.remove(new_filepath)
-            if aze.status_code != 304:  # HTTP 304: Not Modified
+                f.write(downloader.properties['etag'])
+        except HttpResponseError as responseError:
+            if responseError.status_code != 304:  # HTTP 304: Not Modified
                 raise
-
         except Exception as e:
             if os.path.exists(cached_file_path):
                 os.remove(cached_file_path)   # On failure, remove the cached file, if it exits.
@@ -440,7 +500,7 @@ class AzurePath(RichPath):
 
     def __read_as_binary(self) -> bytes:
         with io.BytesIO() as stream:
-            self.__blob_service.get_blob_to_stream(self.__container_name, self.path, stream)
+            self.__blob_client.download_blob().readinto(stream)
             stream.seek(0)
             if binascii.hexlify(stream.read(2)) != b'1f8b':
                 stream.seek(0)
@@ -509,36 +569,52 @@ class AzurePath(RichPath):
             f = tempfile.NamedTemporaryFile(suffix='.pkl.gz', delete=False)
         else:
             raise ValueError('File suffix must be .json.gz, .jsonl.gz or .pkl.gz: %s' % self.path)
-        local_temp_file = LocalPath(f.name)
-        f.close()
-        local_temp_file.save_as_compressed_file(data)
-        self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_temp_file.path)
-        os.unlink(local_temp_file.path)
+        try:
+            local_temp_file = LocalPath(f.name)
+            f.close()
+            local_temp_file.save_as_compressed_file(data)
+            with open(local_temp_file.path, 'rb') as local_fp:
+                self.__blob_client.upload_blob(local_fp, overwrite=True)
+        finally:
+            os.unlink(local_temp_file.path)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['AzurePath']:
         full_pattern = os.path.join(self.path, file_pattern)
-        yield from (AzurePath(blob.name,
-                              azure_container_name=self.__container_name,
-                              azure_blob_service=self.__blob_service,
+
+        seen_at_least_one_in_dir = False
+        for blob in self.__container_client.list_blobs(name_starts_with=self.path):
+            seen_at_least_one_in_dir = True
+            if fnmatch.fnmatch(blob.name, full_pattern):
+                yield AzurePath(blob.name,
+                              azure_container_client=self.__container_client,
                               cache_location=self.__cache_location)
-                    for blob in self.__blob_service.list_blobs(self.__container_name, self.path)
-                    if fnmatch.fnmatch(blob.name, full_pattern))
+
+        if not seen_at_least_one_in_dir:
+            logging.warning("AzurePath is iterating over non-existent directory %s" % self)
 
     def join(self, filename: str) -> 'AzurePath':
         return AzurePath(os.path.join(self.path.rstrip('/'), filename),
-                         azure_container_name=self.__container_name,
-                         azure_blob_service=self.__blob_service,
+                         azure_container_client=self.__container_client,
                          cache_location=self.__cache_location)
 
     def basename(self) -> str:
         return os.path.basename(self.path)
 
     def get_size(self) -> int:
-        file_properties = self.__blob_service.get_blob_properties(self.__container_name, self.path)
-        return file_properties.properties.content_length
+        return self.__blob_client.get_blob_properties().size
 
     def exists(self) -> bool:
-        return self.__blob_service.exists(self.__container_name, self.path)
+        if not self.is_dir():
+            return self.__blob_client.exists()
+        else:
+            return True
+
+    def delete(self, missing_ok: bool=True) -> None:
+        if self.is_file():
+            self.__blob_client.delete_blob()
+            os.unlink(self.__cached_file_path)
+        elif not missing_ok:
+            raise FileNotFoundError(self.path)
 
     def to_local_path(self) -> LocalPath:
         """Cache all files locally and return their local path."""
@@ -550,19 +626,21 @@ class AzurePath(RichPath):
         else:
             return self.__cache_file_locally()
 
-    def _copy_from_file(self, from_file: 'RichPath') -> None:
+    def _copy_from_file(self, from_file: RichPath) -> None:
         if not isinstance(from_file, AzurePath):
             # Default to copying the file locally first.
             super()._copy_from_file(from_file)
             return
-        assert from_file.exists()
-        source_url = self.__blob_service.make_blob_url(from_file.__container_name, from_file.path,
-                                                       sas_token=from_file.__blob_service.sas_token)
-        copy = self.__blob_service.copy_blob(self.__container_name, self.path, copy_source=source_url)
-        while copy.status == 'pending':
+        if not from_file.exists():
+            raise FileNotFoundError(f"File {from_file} not found")
+        self.__blob_client.start_copy_from_url(from_file.__blob_client.url)
+
+        while self.__blob_client.get_blob_properties().copy.status == 'pending':
             time.sleep(.1)
-        if copy.status != 'success':
+        if self.__blob_client.get_blob_properties().copy.status != 'success':
+            copy = self.__blob_client.get_blob_properties().copy
             raise Exception('Failed to copy between Azure blobs: %s %s' % (copy.status, copy.status_description))
 
-    def _copy_from_local_file(self, local_file: 'LocalPath') -> None:
-        self.__blob_service.create_blob_from_path(self.__container_name, self.path, local_file.path)
+    def _copy_from_local_file(self, local_file: LocalPath) -> None:
+        with open(local_file.path, 'rb') as f:
+            self.__container_client.get_blob_client(self.path).upload_blob(f, overwrite=True)
