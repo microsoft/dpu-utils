@@ -414,7 +414,8 @@ class AzurePath(RichPath):
                  cache_location: Optional[str]):
         super().__init__(path)
         self.__container_client = azure_container_client
-        self.__blob_client = self.__container_client.get_blob_client(self.path)  # TODO: Does this work with dirs?
+        self.__blob_client = self.__container_client.get_blob_client(self.path)
+
         self.__cache_location = cache_location
 
     def __eq__(self, other):
