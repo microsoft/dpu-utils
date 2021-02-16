@@ -113,16 +113,16 @@ class RichPath(ABC):
 
             if azure_info_path is not None:
                 with open(azure_info_path, 'r') as azure_info_file:
-                    azure_info = json.load(azure_info_file)
+                   azure_info = json.load(azure_info_file)
                 azure_info = azure_info.get(account_name)
                 if azure_info is None:
-                    raise Exception("Could not find access information for account '%s'!" % (account_name,))
+                   raise Exception("Could not find access information for account '%s'!" % (account_name,))
 
                 account_endpoint = azure_info.get('endpoint', "https://%s.blob.core.windows.net/" % account_name)
                 cache_location = azure_info.get('cache_location')
-               connection_string =  azure_info.get('connection_string')
-               sas_token = azure_info.get('sas_token')
-               account_key = azure_info.get('account_key')
+                connection_string =  azure_info.get('connection_string')
+                sas_token = azure_info.get('sas_token')
+                account_key = azure_info.get('account_key')
 
                 if connection_string is not None:
                     container_client = ContainerClient.from_connection_string(connection_string, container_name)
