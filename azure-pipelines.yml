@@ -21,6 +21,18 @@ jobs:
     displayName: 'Install dependencies'
     workingDirectory: 'python/'
 
+  - task: Bash@3
+    displayName: "Install Azurite"
+    inputs:
+        targetType: 'inline'
+        script: 'sudo npm install -g azurite'
+
+  - task: Bash@3
+    displayName: "Run Azurite"
+    inputs:
+      targetType: 'inline'
+      script: 'sudo azurite --silent -l /tmp --loose &'
+
   - script: |
       pip install pytest
       pytest tests --doctest-modules --junitxml=junit/test-results.xml
