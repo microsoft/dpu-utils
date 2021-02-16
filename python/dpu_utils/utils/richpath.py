@@ -82,7 +82,8 @@ class RichPath(ABC):
     and "directories" as `azure://storage_account_name/container_name/path/to/blob`. The
     Azure SAS token can be retrieved from the Azure portal or from the Azure Storage Explorer.
 
-    The `cache_location` may contain environment variables, e.g. `/path/to/$SOME_VAR/dir`
+    The `cache_location` may contain environment variables, e.g. `/path/to/${SOME_VAR}/dir`
+
     that will be replaced appropriately.
 
     If an external library requires a local path, you can ensure that a `RichPath`
@@ -119,18 +120,21 @@ class RichPath(ABC):
 
                 account_endpoint = azure_info.get('endpoint', "https://%s.blob.core.windows.net/" % account_name)
                 cache_location = azure_info.get('cache_location')
+               connection_string =  azure_info.get('connection_string')
+               sas_token = azure_info.get('sas_token')
+               account_key = azure_info.get('account_key')
 
-                if azure_info.get('connection_string') is not None:
-                    container_client = ContainerClient.from_connection_string(azure_info.get('connection_string'), container_name)
-                elif azure_info.get('sas_token') is not None:
-                    query_string: str = azure_info.get('sas_token')
+                if connection_string is not None:
+                    container_client = ContainerClient.from_connection_string(connection_string, container_name)
+                elif sas_token is not None:
+                    query_string: str = sas_token
                     if not query_string.startswith('?'):
                         query_string = '?' + query_string
                     container_client = ContainerClient.from_container_url(f"{account_endpoint}/{container_name}{query_string}")
-                elif azure_info.get('account_key') is not None:
-                    account_key = azure_info.get('account_key')
+                elif account_key is not None:
                     connection_string = f"AccountName={account_name};AccountKey={account_key};BlobEndpoint={account_endpoint};"
                     container_client = ContainerClient.from_connection_string(connection_string, container_name)
+
                 else:
                     raise Exception("Access to Azure storage account '%s' with azure_info_path requires either account_key or sas_token!" % (
                         account_name,
