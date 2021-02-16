@@ -37,7 +37,8 @@ class RichPath(ABC):
     RichPath is an abstraction layer of local and remote paths allowing unified access
     of both local and remote files. Currently, only local and Azure blob paths are supported.
     
-    To use Azure paths, if the current environment is setup you need no further action.
+    To use Azure paths, if the current environment is set up you need no further action.
+
     See https://docs.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential for
     potential default configuration (az login, Service Principals, ManagedIdentity, etc.
 
