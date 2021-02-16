@@ -44,8 +44,6 @@ See also [here](#approximate-duplicate-code-detection) for a command line tool.
 
 ##### TensorFlow 1.x Utilities `dpu_utils.tfutils`
 * [`get_activation`](python/dpu_utils/tfutils/activation.py) retrieve activations function by name.
-* [`GradRatioLoggingOptimizer`](python/dpu_utils/tfutils/gradratiologgingoptimizer.py) a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
-* [`TFVariableSaver`](python/dpu_utils/tfutils/tfvariablesaver.py) save TF variables in an object that can be pickled.
 
 Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
 * [`unsorted_segment_logsumexp`](python/dpu_utils/tfutils/unsortedsegmentops.py)
