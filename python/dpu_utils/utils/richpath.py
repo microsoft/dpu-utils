@@ -31,6 +31,9 @@ AZURE_PATH_PREFIX = "azure://"
 
 __all__ = ['RichPath', 'LocalPath', 'AzurePath']
 
+logging.getLogger('azure.storage.blob').setLevel(logging.ERROR)
+logging.getLogger('azure.core').setLevel(logging.ERROR)
+
 @total_ordering
 class RichPath(ABC):
     """
