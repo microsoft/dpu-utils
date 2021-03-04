@@ -16,7 +16,7 @@ setuptools.setup(
       python_requires=">=3.6.1",
       include_package_data=True,
       install_requires=[
-          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece==0.1.92', 'cffi'
+          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece==0.1.92', 'cffi', 'regex'
       ],
       scripts=['dpu_utils/codeutils/deduplication/deduplicationcli'],
       test_suite="tests",
