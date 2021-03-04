@@ -7,3 +7,4 @@ numpy
 typing_extensions
 sentencepiece==0.1.92
 cffi
+regex
