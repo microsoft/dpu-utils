@@ -2,13 +2,15 @@ jobs:
 
 - job: 'Python_Test'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
   strategy:
     matrix:
       Python36:
         python.version: '3.6'
       Python37:
         python.version: '3.7'
+      Python38:
+        python.version: '3.8'
     maxParallel: 4
 
   steps:
@@ -48,7 +50,7 @@ jobs:
 - job: 'Python_Publish'
   dependsOn: 'Python_Test'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
   - task: UsePythonVersion@0
@@ -69,12 +71,15 @@ jobs:
 
 - job: 'DotNet_Build'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
-  - task: DotNetCoreInstaller@0
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
     inputs:
-      version: '2.1.300'
+       packageType: sdk
+       version: 3.x
+       installationPath: $(Agent.ToolsDirectory)/dotnet
 
   - script: dotnet restore
     workingDirectory: 'dotnet/'
@@ -96,7 +101,7 @@ jobs:
 - job: 'DotNet_Publish'
   dependsOn: 'DotNet_Build'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
   - script: dotnet pack
