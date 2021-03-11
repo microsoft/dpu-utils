@@ -2,7 +2,7 @@ jobs:
 
 - job: 'Python_Test'
   pool:
-    vmImage: 'Ubuntu 18.04'
+    vmImage: 'Ubuntu 20.04'
   strategy:
     matrix:
       Python36:
@@ -50,7 +50,7 @@ jobs:
 - job: 'Python_Publish'
   dependsOn: 'Python_Test'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
   - task: UsePythonVersion@0
@@ -71,7 +71,7 @@ jobs:
 
 - job: 'DotNet_Build'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
   - task: DotNetCoreInstaller@0
@@ -98,7 +98,7 @@ jobs:
 - job: 'DotNet_Publish'
   dependsOn: 'DotNet_Build'
   pool:
-    vmImage: 'Ubuntu 16.04'
+    vmImage: 'Ubuntu 20.04'
 
   steps:
   - script: dotnet pack
