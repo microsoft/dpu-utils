@@ -42,14 +42,6 @@ is provided at the docstring of each class.
 * [`deduplication.DuplicateDetector`](python/dpu_utils/codeutils/deduplication/deduplication.py) API to detects (near)duplicates in codebases.
 See also [here](#approximate-duplicate-code-detection) for a command line tool.
 
-##### TensorFlow 1.x Utilities `dpu_utils.tfutils`
-* [`get_activation`](python/dpu_utils/tfutils/activation.py) retrieve activations function by name.
-
-Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
-* [`unsorted_segment_logsumexp`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-* [`unsorted_segment_log_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-* [`unsorted_segment_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-
 ##### TensorFlow 2.x Utilities `dpu_utils.tf2utils`
 * [`get_activation_function_by_name`](python/dpu_utils/tf2utils/activation.py) retrieve activation functions by name.
 * [`gelu`](python/dpu_utils/tf2utils/activation.py) The GeLU activation function.
@@ -60,12 +52,6 @@ Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](http
 * [`unsorted_segment_log_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
 * [`unsorted_segment_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
 
-
-##### TensorFlow Models `dpu_utils.tfmodels`
-* [`SparseGGNN`](python/dpu_utils/tfmodels/sparsegnn.py) a sparse GGNN implementation.
-* [`AsyncGGNN`](python/dpu_utils/tfmodels/asyncgnn.py) an asynchronous GGNN implementation.
-
-These models have not been tested with TF 2.0.
 
 ### Command-line tools
 
