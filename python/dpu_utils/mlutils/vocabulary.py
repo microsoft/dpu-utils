@@ -87,9 +87,9 @@ class Vocabulary(Sized):
     def get_all_names(self) -> FrozenSet[str]:
         return frozenset(self.token_to_id.keys())
 
-    def __batch_add_from_counter(self, token_counter: typing.Counter[str], count_threshold: int, max_size: int) -> None:
-        """Update dictionary with elements of the token_counter"""
-        for token, count in token_counter.most_common(max_size):
+    def __batch_add_from_counter(self, token_counter: typing.Counter[str], count_threshold: int, max_num_elements_to_add: int) -> None:
+        """Update dictionary with at most max_num_elements_to_add elements of the token_counter"""
+        for token, count in token_counter.most_common(max_num_elements_to_add):
             if count >= count_threshold:
                 self.add_or_get_id(token)
             else:
@@ -115,9 +115,14 @@ class Vocabulary(Sized):
         vocab.__batch_add_from_counter(token_counter, count_threshold, max_size - num_base_tokens)
         return vocab
 
-    def update(self, token_counter: typing.Counter[str], max_size: int, count_threshold: int=5):
-        assert len(self) < max_size, 'Dictionary is already larger than max_size.'
-        self.__batch_add_from_counter(token_counter, count_threshold=count_threshold, max_size=max_size)
+    def update(self, token_counter: typing.Counter[str], max_num_elements_to_add: int, count_threshold: int=5) -> None:
+        """
+        Update this Vocabulary instance with elements from the new token_counter. This will add at most
+            max_num_elements_to_add elements from token_counter with a count above the count_threshold.
+            Elements that already existed will maintain their id, but new ids may be added.
+        """
+        self.__batch_add_from_counter(token_counter, count_threshold=count_threshold,
+                                      max_num_elements_to_add=max_num_elements_to_add)
 
     def get_empirical_distribution(self, elements: Iterable[str], dirichlet_alpha: float = 10.) -> np.ndarray:
         """Retrieve empirical distribution of elements."""
