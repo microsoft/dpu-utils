@@ -1,5 +1,4 @@
 import re
-from os import listdir
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Iterable, TypeVar, Generic, Union
 
