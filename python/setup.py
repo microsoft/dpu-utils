@@ -1,7 +1,10 @@
-import setuptools
+import setuptools, os
 
-with open('../README.md') as f:
-    long_description = f.read()
+if os.file.exists('../README.md'):
+    with open('../README.md') as f:
+        long_description = f.read()
+else:
+    long_description = ""
 
 setuptools.setup(
       name='dpu_utils',
