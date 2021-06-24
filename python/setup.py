@@ -1,6 +1,6 @@
 import setuptools, os
 
-if os.file.exists('../README.md'):
+if os.path.exists('../README.md'):
     with open('../README.md') as f:
         long_description = f.read()
 else:
