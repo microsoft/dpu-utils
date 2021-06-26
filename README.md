@@ -13,7 +13,7 @@ Stored in the `python` subdirectory, published as the `dpu-utils` package.
 ```bash
 pip install dpu-utils
 ```
-
+OR:
 ```bash
 conda install -c conda-forge dpu-utils
 ```
