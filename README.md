@@ -1,4 +1,4 @@
-# DPU Utilities ![PyPI - Python Version](https://img.shields.io/pypi/v/dpu-utils)
+# DPU Utilities ![PyPI - Python Version](https://img.shields.io/pypi/v/dpu-utils)![Anaconda](https://anaconda.org/conda-forge/dpu-utils/badges/version.svg)
 [![Build Status](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_apis/build/status/Microsoft.dpu-utils?branchName=master)](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_build/latest?definitionId=3)
 
 
@@ -12,6 +12,10 @@ Stored in the `python` subdirectory, published as the `dpu-utils` package.
 
 ```bash
 pip install dpu-utils
+```
+OR via the community-maintained Conda recipe:
+```bash
+conda install -c conda-forge dpu-utils
 ```
 
 ### Overview
