@@ -67,9 +67,9 @@ class MultiWorkerCallableIterator(Iterable):
             maxsize=max_queue_size
         )  # type: Union[queue.Queue, multiprocessing.Queue]
         self.__threads = [
-            threading.Thread(target=lambda: MultiWorkerCallableIterator._worker(self.__in_queue, self.__out_queue, worker_callable)) if use_threads
+            threading.Thread(target=lambda: MultiWorkerCallableIterator._worker(self.__in_queue, self.__out_queue, worker_callable), daemon=True) if use_threads
             else multiprocessing.Process(
-                target=partial(MultiWorkerCallableIterator._worker, self.__in_queue, self.__out_queue, worker_callable)
+                target=partial(MultiWorkerCallableIterator._worker, self.__in_queue, self.__out_queue, worker_callable), daemon=True
             ) for _ in range(num_workers)
         ]  # type: List[Union[threading.Thread, multiprocessing.Process]]
         for worker in self.__threads:
@@ -109,7 +109,7 @@ class BufferedIterator(Iterable[T]):
 
         if enabled:
             self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator))
+            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator), daemon=True)
             self.__worker_process.start()
 
     @staticmethod
@@ -152,8 +152,8 @@ class DoubleBufferedIterator(Iterator[T]):
         if enabled:
             self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
             self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable))
-            self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer))
+            self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable), daemon=True)
+            self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer), daemon=True)
             self.__worker_process_inner.start()
             self.__worker_process_outer.start()
             self.__original_iterable = None
