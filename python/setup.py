@@ -8,7 +8,7 @@ else:
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.4.3',
+      version='0.5.0',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       long_description=long_description,
@@ -19,7 +19,7 @@ setuptools.setup(
       python_requires=">=3.6.1",
       include_package_data=True,
       install_requires=[
-          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece==0.1.92', 'cffi', 'regex'
+          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece', 'cffi', 'regex'
       ],
       scripts=['dpu_utils/codeutils/deduplication/deduplicationcli'],
       test_suite="tests",
