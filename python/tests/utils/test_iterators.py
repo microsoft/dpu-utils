@@ -4,6 +4,8 @@ from itertools import islice
 
 from dpu_utils.utils import shuffled_iterator, ThreadedIterator, BufferedIterator, DoubleBufferedIterator, MultiWorkerCallableIterator
 
+from python.dpu_utils.utils.iterators import uniform_sample_iterator
+
 
 class TestShuffleIterator(unittest.TestCase):
 
@@ -58,3 +60,16 @@ class TestParellelIterators(unittest.TestCase):
                 with self.subTest("%s=%s" % (iterator_type, iter_kind)):
                     returned = list(islice(iterator_type(iter_kind), 10))
         # The test always finishes normally, but the pytest process should _not_ hang due to unfinished threads/processes.
+
+
+class TestSampleIterator(unittest.TestCase):
+    def test_sample_iterator(self):
+
+        self.assertSetEqual(set(uniform_sample_iterator(range(10), sample_size=100)), set(range(10)))
+        self.assertSetEqual(set(uniform_sample_iterator(range(100), sample_size=100)), set(range(100)))
+
+        all_elements = set(range(1000))
+        sampled = set(uniform_sample_iterator(all_elements, sample_size=100))
+        self.assertEqual(len(sampled), 100)
+        self.assertEqual(len(set(sampled)), 100, msg="Elements not unique.")
+        self.assertTrue(all(s in all_elements for s in sampled))
