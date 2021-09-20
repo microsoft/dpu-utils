@@ -8,7 +8,7 @@ else:
 
 setuptools.setup(
       name='dpu_utils',
-      version='0.5.0',
+      version='0.5.1',
       license='MIT',
       description='Python utilities used by Deep Procedural Intelligence',
       long_description=long_description,
