@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 from functools import partial
 import random
@@ -236,3 +237,25 @@ def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, rng
         yield to_yield
 
     yield from buffer
+
+
+def uniform_sample_iterator(input_iterator: Iterator[T], sample_size: int, rng: Optional[random.Random]=None) -> List[T]:
+    """
+    Use reservoir sampling to uniform-sample a (finite) iterator.
+
+    :return: a list of the sampled elements
+    """
+    if rng is None:
+        rng = random
+
+    # Ensure that this is an iterator that can be consumed exactly once.
+    input_iterator = iter(input_iterator)
+
+    buffer = list(islice(input_iterator, sample_size))  # type: List[T]
+
+    for i, element in enumerate(input_iterator, start=sample_size+1):
+        j = rng.randrange(i)
+        if j < sample_size:
+            buffer[j] = element
+
+    return buffer
