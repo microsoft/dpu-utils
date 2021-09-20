@@ -2,9 +2,7 @@ import unittest
 from functools import partial
 from itertools import islice
 
-from dpu_utils.utils import shuffled_iterator, ThreadedIterator, BufferedIterator, DoubleBufferedIterator, MultiWorkerCallableIterator
-
-from python.dpu_utils.utils.iterators import uniform_sample_iterator
+from dpu_utils.utils import shuffled_iterator, ThreadedIterator, BufferedIterator, DoubleBufferedIterator, MultiWorkerCallableIterator, uniform_sample_iterator
 
 
 class TestShuffleIterator(unittest.TestCase):
