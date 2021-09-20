@@ -11,7 +11,7 @@ from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, U
 
 T = TypeVar('T')
 
-__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator']
+__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator', 'uniform_sample_iterator']
 
 
 class ThreadedIterator(Iterator[T]):
