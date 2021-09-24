@@ -10,7 +10,8 @@ from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, U
 
 T = TypeVar('T')
 
-__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator', 'sample_iterator', 'uniform_sample_iterator']
+__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator',
+           'subsample_iterator', 'uniform_sample_iterator']
 
 
 class ThreadedIterator(Iterator[T]):
@@ -260,14 +261,14 @@ def uniform_sample_iterator(input_iterator: Iterator[T], sample_size: int, rng: 
     return buffer
 
 
-def sample_iterator(
+def subsample_iterator(
         input_iter: Iterator[T],
         sampling_rate: float,
         num_elements: Optional[int]=None,
         rng: Optional[random.Random]=None
 ) -> Iterator[T]:
     """
-    Stream-sample an input iterator with some rate. This wrapper simply iterates `input_iter` and subsamples its
+    Stream-sample an input iterator with some sampling rate. This wrapper simply iterates `input_iter` and subsamples its
         elements until `num_elements` have been returned or the iterator has been exhausted.
 
     :param input_iter: the original iterator
