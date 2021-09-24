@@ -629,8 +629,13 @@ class AzurePath(RichPath):
             f = tempfile.NamedTemporaryFile(suffix='.jsonl.gz', delete=False)
         elif self.path.endswith('.pkl.gz'):
             f = tempfile.NamedTemporaryFile(suffix='.pkl.gz', delete=False)
+        elif self.path.endswith('.msgpack.gz'):
+            f = tempfile.NamedTemporaryFile(suffix='.msgpack.gz', delete=False)
+        elif self.path.endswith('.msgpack.l.gz'):
+            f = tempfile.NamedTemporaryFile(suffix='.msgpack.l.gz', delete=False)
+
         else:
-            raise ValueError('File suffix must be .json.gz, .jsonl.gz or .pkl.gz: %s' % self.path)
+            raise ValueError('File suffix must be .json.gz, .jsonl.gz, .msgpack.gz, .msgpack.l.gz, or .pkl.gz: %s' % self.path)
         try:
             local_temp_file = LocalPath(f.name)
             f.close()
