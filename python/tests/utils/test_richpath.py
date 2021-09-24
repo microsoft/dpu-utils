@@ -11,6 +11,8 @@ from azure.storage.blob import ContainerClient
 from dpu_utils.utils import RichPath
 from dpu_utils.utils import save_jsonl_gz
 
+from python.dpu_utils.utils.msgpackloading import save_msgpack_l_gz
+
 
 class AuthType(Enum):
     CONNECTION_STRING = 0
@@ -162,7 +164,7 @@ class TestRichPath(unittest.TestCase):
             self.assertFalse(remote_dir.is_file())
             self.assertTrue(remote_dir.exists())
             remote_files = list(remote_dir.iterate_filtered_files_in_dir('*.gz'))
-            self.assertEqual(len(remote_files), 3)
+            self.assertEqual(len(remote_files), 5)
 
             for suffix in ('.json.gz', '.jsonl.gz', '.pkl.gz', '.msgpack.gz', '.msgpack.l.gz'):
                 joined_remote = remote_dir.join(f"data{suffix}")
@@ -231,7 +233,10 @@ class TestRichPath(unittest.TestCase):
                 new_elements = list(range(500))
                 with TemporaryDirectory() as tmp:
                     path = os.path.join(tmp, 'tst'+suffix)
-                    save_jsonl_gz(new_elements, path)
+                    if suffix == '.jsonl.gz':
+                        save_jsonl_gz(new_elements, path)
+                    else:
+                        save_msgpack_l_gz(new_elements, path)
                     container_client = ContainerClient.from_connection_string(self.AZURITE_DEVELOPMENT_CONNECTION_STRING,
                                                                               "test1")
                     blob_client = container_client.get_blob_client("compressed/data" + suffix)
