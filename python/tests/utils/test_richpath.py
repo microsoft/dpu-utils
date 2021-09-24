@@ -11,7 +11,7 @@ from azure.storage.blob import ContainerClient
 from dpu_utils.utils import RichPath
 from dpu_utils.utils import save_jsonl_gz
 
-from python.dpu_utils.utils.msgpackloading import save_msgpack_l_gz
+from dpu_utils.utils.msgpackloading import save_msgpack_l_gz
 
 
 class AuthType(Enum):
