@@ -45,6 +45,7 @@ is provided at the docstring of each class.
 * [`get_language_keywords()`](python/dpu_utils/codeutils/keywords/keywordlist.py) an API to retrieve the keyword tokens for many programming languages.
 * [`deduplication.DuplicateDetector`](python/dpu_utils/codeutils/deduplication/deduplication.py) API to detects (near)duplicates in codebases.
 See also [here](#approximate-duplicate-code-detection) for a command line tool.
+* [`treesitter.parser_for`](python/dpu_utils/codeutils/treesitter/parser.py) get [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) parser by language name.
 
 ##### TensorFlow 1.x Utilities `dpu_utils.tfutils`
 * [`get_activation`](python/dpu_utils/tfutils/activation.py) retrieve activations function by name.
