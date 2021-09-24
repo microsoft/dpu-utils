@@ -5,11 +5,22 @@ from typing import FrozenSet
 
 __all__ = ['get_language_keywords']
 
-
-def load_file(name: str) -> FrozenSet[str]:
-    with open(os.path.join(os.path.dirname(__file__), name)) as f:
-        return frozenset(l.strip() for l in f if len(l.strip()) > 0)
-
+_LANGUAGE_TO_FILENAME = {
+    'c': 'c.txt',
+    'cpp': 'cpp.txt',
+    'c++': 'cpp.txt',
+    'csharp': 'csharp.txt',
+    'c_sharp': 'csharp.txt',
+    'c#': 'csharp.txt',
+    'go': 'go.txt',
+    'java': 'java.txt',
+    'javascript': 'javascript.txt',
+    'js': 'javascript.txt',
+    'php': 'php.txt',
+    'ruby': 'ruby.txt',
+    'typescript': 'typescript.txt',
+    'ts': 'typescript.txt',
+}
 
 @lru_cache()
 def get_language_keywords(language: str) -> FrozenSet[str]:
@@ -22,25 +33,13 @@ def get_language_keywords(language: str) -> FrozenSet[str]:
     we exclude them here for consistency. We also exclude special
     functions-like keywords, such as `die()` in PHP.
     """
-    if language == 'c':
-        return load_file('c.txt')
-    elif language == 'cpp' or language == 'c++':
-        return load_file('cpp.txt')
-    elif language == 'csharp' or language == 'c#':
-        return load_file('csharp.txt')
-    elif language == 'go':
-        return load_file('go.txt')
-    elif language == 'java':
-        return load_file('java.txt')
-    elif language == 'javascript':
-        return load_file('javascript.txt')
-    elif language == 'php':
-        return load_file('php.txt')
-    elif language == 'python':
+    language = language.lower()
+    if language == 'python':
         return frozenset(k for k in keyword.kwlist if k != 'True' and k != 'False')
-    elif language == 'ruby':
-        return load_file('ruby.txt')
-    elif language == 'typescript':
-        return load_file('typescript.txt')
+    elif language in _LANGUAGE_TO_FILENAME:
+        name = _LANGUAGE_TO_FILENAME[language]
+        with open(os.path.join(os.path.dirname(__file__), name)) as f:
+            pass
+        return frozenset(l.strip() for l in f if len(l.strip()) > 0)
     else:
-        raise Exception('Language %s not supported yet' % language)
+        raise Exception('Language keywords `%s` not supported yet. Consider contributing it to dpu-utils.' % language)

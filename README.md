@@ -43,6 +43,7 @@ is provided at the docstring of each class.
 * [`split_identifier_into_parts()`](python/dpu_utils/codeutils/identifiersplitting.py) split identifiers into subtokens on CamelCase and snake_case.
 * [`Lattice`](python/dpu_utils/codeutils/lattice/lattice.py), [`CSharpLattice`](python/dpu_utils/codeutils/lattice/csharplattice.py) represent lattices and useful operations on lattices in Python.
 * [`get_language_keywords()`](python/dpu_utils/codeutils/keywords/keywordlist.py) an API to retrieve the keyword tokens for many programming languages.
+* [`language_candidates_from_suffix()`](python/dpu_utils/codeutils/filesuffix.py) a function to retrieve the candidate language given the file suffix.
 * [`deduplication.DuplicateDetector`](python/dpu_utils/codeutils/deduplication/deduplication.py) API to detects (near)duplicates in codebases.
 See also [here](#approximate-duplicate-code-detection) for a command line tool.
 
