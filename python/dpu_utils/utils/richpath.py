@@ -27,6 +27,12 @@ from azure.storage.blob import ContainerClient
 
 from dpu_utils.utils.dataloading import save_json_gz, save_jsonl_gz
 
+try:
+    import msgpack
+except ImportError:
+    pass # Continue without msgpack support
+
+
 AZURE_PATH_PREFIX = "azure://"
 
 __all__ = ['RichPath', 'LocalPath', 'AzurePath']
@@ -224,6 +230,14 @@ class RichPath(ABC):
         pass
 
     @abstractmethod
+    def read_as_msgpack_l(self) -> Iterable[Any]:
+        pass
+
+    @abstractmethod
+    def read_as_msgpack(self) -> Any:
+        pass
+
+    @abstractmethod
     def read_as_numpy(self) -> Any:
         pass
 
@@ -234,6 +248,10 @@ class RichPath(ABC):
             return self.read_as_jsonl()
         if self.path.endswith('.pkl.gz') or self.path.endswith('.pkl'):
             return self.read_as_pickle()
+        if self.path.endswith('.msgpack.gz') or self.path.endswith('.msgpack'):
+            return self.read_as_msgpack()
+        if self.path.endswith('.msgpack.l.gz') or self.path.endswith('.msgpack.l'):
+            return self.read_as_msgpack_l()
         if self.path.endswith('.npy') or self.path.endswith('.npz'):
             return self.read_as_numpy()
         raise ValueError('File suffix must be .json, .json.gz, .pkl, .pkl.gz, .npy or .npz: %s' % self.path)
@@ -361,6 +379,24 @@ class LocalPath(RichPath):
             with open(self.path, 'rb') as f:
                 return pickle.load(f)
 
+    def read_as_msgpack_l(self) -> Iterable[Any]:
+        if self.__is_gzipped(self.path):
+            with gzip.open(self.path) as f:
+                unpacker = msgpack.Unpacker(f, raw=False, object_pairs_hook=OrderedDict)
+                yield from unpacker
+        else:
+            with open(self.path, 'rb') as f:
+                unpacker = msgpack.Unpacker(f, raw=False, object_pairs_hook=OrderedDict)
+                yield from unpacker
+
+    def read_as_msgpack(self) -> Any:
+        if self.__is_gzipped(self.path):
+            with gzip.open(self.path) as f:
+                return msgpack.load(f)
+        else:
+            with open(self.path, 'rb') as f:
+                return msgpack.load(f)
+
     def read_as_numpy(self) -> Any:
         with open(self.path, 'rb') as f:
             return numpy.load(f)
@@ -378,8 +414,16 @@ class LocalPath(RichPath):
         elif self.path.endswith('.pkl.gz'):
             with gzip.GzipFile(self.path, 'wb') as outfile:
                 pickle.dump(data, outfile)
+        elif self.path.endswith('.msgpack.gz'):
+            with gzip.GzipFile(self.path, 'wb') as outfile:
+                msgpack.dump(data, outfile)
+        elif self.path.endswith('.msgpack.l.gz'):
+            with gzip.GzipFile(self.path, "wb") as out_file:
+                packer = msgpack.Packer(use_bin_type=True)
+                for element in data:
+                    out_file.write(packer.pack(element))
         else:
-            raise ValueError('File suffix must be .json.gz or .pkl.gz: %s' % self.path)
+            raise ValueError('File suffix must be `.json.gz`, `.pkl.gz`, `.msgpack.gz`, or `.msgpack.l.gz`. It was `%s`' % self.path)
 
     def iterate_filtered_files_in_dir(self, file_pattern: str) -> Iterable['LocalPath']:
         yield from (LocalPath(path)
@@ -529,6 +573,21 @@ class AzurePath(RichPath):
             data = cached_file_path.read_as_pickle()
         return data
 
+    def read_as_msgpack_l(self) -> Iterable[Any]:
+        if self.__cache_location is None:
+            unpacker = msgpack.Unpacker(self.__read_as_binary(), raw=False, object_pairs_hook=OrderedDict)
+            yield from unpacker
+
+        cached_file_path = self.__cache_file_locally()
+        return cached_file_path.read_as_msgpack_l()
+
+    def read_as_msgpack(self) -> Any:
+        if self.__cache_location is None:
+            return msgpack.load(self.__read_as_binary())
+
+        cached_file_path = self.__cache_file_locally()
+        return cached_file_path.read_as_msgpack()
+
     def read_as_numpy(self) -> Any:
         if self.__cache_location is None:
             return numpy.load(self.read_as_binary())
@@ -570,8 +629,13 @@ class AzurePath(RichPath):
             f = tempfile.NamedTemporaryFile(suffix='.jsonl.gz', delete=False)
         elif self.path.endswith('.pkl.gz'):
             f = tempfile.NamedTemporaryFile(suffix='.pkl.gz', delete=False)
+        elif self.path.endswith('.msgpack.gz'):
+            f = tempfile.NamedTemporaryFile(suffix='.msgpack.gz', delete=False)
+        elif self.path.endswith('.msgpack.l.gz'):
+            f = tempfile.NamedTemporaryFile(suffix='.msgpack.l.gz', delete=False)
+
         else:
-            raise ValueError('File suffix must be .json.gz, .jsonl.gz or .pkl.gz: %s' % self.path)
+            raise ValueError('File suffix must be .json.gz, .jsonl.gz, .msgpack.gz, .msgpack.l.gz, or .pkl.gz: %s' % self.path)
         try:
             local_temp_file = LocalPath(f.name)
             f.close()

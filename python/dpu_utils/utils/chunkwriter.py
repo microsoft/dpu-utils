@@ -1,5 +1,4 @@
 import re
-from os import listdir
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Iterable, TypeVar, Generic, Union
 
@@ -13,7 +12,7 @@ __all__ = ['ChunkWriter']
 class ChunkWriter(Generic[T]):
     """Encapsulates writing output into chunks (multiple consecutive files).
 
-    By setting the file_suffix to either .pkl.gz, .json.gz or .jsonl.gz
+    By setting the file_suffix to either .pkl.gz, .json.gz, .msgpack.l.gz, .msgpack.gz, or .jsonl.gz
     the appropriate format will be used for the chunks.
 
     ChunkWriter can be used either in a context manager, ie

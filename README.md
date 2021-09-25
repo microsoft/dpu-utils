@@ -1,4 +1,4 @@
-# DPU Utilities ![PyPI - Python Version](https://img.shields.io/pypi/v/dpu-utils)
+# DPU Utilities ![PyPI - Python Version](https://img.shields.io/pypi/v/dpu-utils)![Anaconda](https://anaconda.org/conda-forge/dpu-utils/badges/version.svg)
 [![Build Status](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_apis/build/status/Microsoft.dpu-utils?branchName=master)](https://deepproceduralintelligence.visualstudio.com/dpu-utils/_build/latest?definitionId=3)
 
 
@@ -12,6 +12,10 @@ Stored in the `python` subdirectory, published as the `dpu-utils` package.
 
 ```bash
 pip install dpu-utils
+```
+OR via the community-maintained Conda recipe:
+```bash
+conda install -c conda-forge dpu-utils
 ```
 
 ### Overview
@@ -39,8 +43,10 @@ is provided at the docstring of each class.
 * [`split_identifier_into_parts()`](python/dpu_utils/codeutils/identifiersplitting.py) split identifiers into subtokens on CamelCase and snake_case.
 * [`Lattice`](python/dpu_utils/codeutils/lattice/lattice.py), [`CSharpLattice`](python/dpu_utils/codeutils/lattice/csharplattice.py) represent lattices and useful operations on lattices in Python.
 * [`get_language_keywords()`](python/dpu_utils/codeutils/keywords/keywordlist.py) an API to retrieve the keyword tokens for many programming languages.
+* [`language_candidates_from_suffix()`](python/dpu_utils/codeutils/filesuffix.py) a function to retrieve the candidate language given the file suffix.
 * [`deduplication.DuplicateDetector`](python/dpu_utils/codeutils/deduplication/deduplication.py) API to detects (near)duplicates in codebases.
 See also [here](#approximate-duplicate-code-detection) for a command line tool.
+* [`treesitter.parser_for`](python/dpu_utils/codeutils/treesitter/parser.py) get [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) parser by language name.
 
 ##### TensorFlow 2.x Utilities `dpu_utils.tf2utils`
 * [`get_activation_function_by_name`](python/dpu_utils/tf2utils/activation.py) retrieve activation functions by name.

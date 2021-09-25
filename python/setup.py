@@ -1,7 +1,10 @@
-import setuptools
+import setuptools, os
 
-with open('../README.md') as f:
-    long_description = f.read()
+if os.path.exists('../README.md'):
+    with open('../README.md') as f:
+        long_description = f.read()
+else:
+    long_description = ""
 
 setuptools.setup(
       name='dpu_utils',
@@ -16,7 +19,7 @@ setuptools.setup(
       python_requires=">=3.6.1",
       include_package_data=True,
       install_requires=[
-          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece==0.1.92', 'cffi', 'regex'
+          'azure-storage-blob', 'azure-identity', 'numpy', 'docopt', 'tqdm', 'SetSimilaritySearch', 'sentencepiece', 'cffi', 'regex'
       ],
       scripts=['dpu_utils/codeutils/deduplication/deduplicationcli'],
       test_suite="tests",

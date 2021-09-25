@@ -18,21 +18,21 @@ class TestSplitCamelCase(unittest.TestCase):
         self.run_test("i", ["i"])
 
     def test_two_words_are_split(self):
-        self.run_test("camelCase", ["camel", "Case"])
-        self.run_test("camelCase2", ["camel", "Case", "2"])
-        self.run_test("camelCase23", ["camel", "Case", "23"])
+        self.run_test("camelCase", ["camel", "case"])
+        self.run_test("camelCase2", ["camel", "case", "2"])
+        self.run_test("camelCase23", ["camel", "case", "23"])
 
     def test_three_words_are_split(self):
-        self.run_test("camelCaseIdentifier", ["camel", "Case", "Identifier"])
+        self.run_test("camelCaseIdentifier", ["camel", "case", "identifier"])
 
     def test_upper_camelcase_is_split(self):
-        self.run_test("CamelCase", ["Camel", "Case"])
-        self.run_test("CamelCaseId", ["Camel", "Case", "Id"])
-        self.run_test("CamelCaseID", ["Camel", "Case", "ID"])
+        self.run_test("CamelCase", ["camel", "case"])
+        self.run_test("CamelCaseId", ["camel", "case", "id"])
+        self.run_test("CamelCaseID", ["camel", "case", "id"])
 
     def test_abbreviations_are_split_correctly(self):
-        self.run_test("HTMLParser", ["HTML", "Parser"])
-        self.run_test("HTML25", ["HTML", "25"])
+        self.run_test("HTMLParser", ["html", "parser"])
+        self.run_test("HTML25", ["html", "25"])
 
     def test_digits_are_split(self):
         self.run_test("var12var3", ["var", "12", "var", "3"])

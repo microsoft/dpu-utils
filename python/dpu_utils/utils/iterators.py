@@ -10,7 +10,8 @@ from typing import Any, TypeVar, Iterable, Iterator, List, Callable, Optional, U
 
 T = TypeVar('T')
 
-__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator']
+__all__ = ['ThreadedIterator', 'MultiWorkerCallableIterator', 'BufferedIterator', 'DoubleBufferedIterator', 'shuffled_iterator',
+           'subsample_iterator', 'uniform_sample_iterator']
 
 
 class ThreadedIterator(Iterator[T]):
@@ -67,9 +68,9 @@ class MultiWorkerCallableIterator(Iterable):
             maxsize=max_queue_size
         )  # type: Union[queue.Queue, multiprocessing.Queue]
         self.__threads = [
-            threading.Thread(target=lambda: MultiWorkerCallableIterator._worker(self.__in_queue, self.__out_queue, worker_callable)) if use_threads
+            threading.Thread(target=lambda: MultiWorkerCallableIterator._worker(self.__in_queue, self.__out_queue, worker_callable), daemon=True) if use_threads
             else multiprocessing.Process(
-                target=partial(MultiWorkerCallableIterator._worker, self.__in_queue, self.__out_queue, worker_callable)
+                target=partial(MultiWorkerCallableIterator._worker, self.__in_queue, self.__out_queue, worker_callable), daemon=True
             ) for _ in range(num_workers)
         ]  # type: List[Union[threading.Thread, multiprocessing.Process]]
         for worker in self.__threads:
@@ -109,7 +110,7 @@ class BufferedIterator(Iterable[T]):
 
         if enabled:
             self.__buffer = multiprocessing.Queue(maxsize=max_queue_size)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator))
+            self.__worker_process = multiprocessing.Process(target=partial(BufferedIterator._worker, self.__buffer, original_iterator), daemon=True)
             self.__worker_process.start()
 
     @staticmethod
@@ -152,8 +153,8 @@ class DoubleBufferedIterator(Iterator[T]):
         if enabled:
             self.__buffer_inner = multiprocessing.Queue(maxsize=max_queue_size_inner)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
             self.__buffer_outer = multiprocessing.Queue(maxsize=max_queue_size_outer)  # type: multiprocessing.Queue[Union[None, T, Tuple[Exception, Any]]]
-            self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable))
-            self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer))
+            self.__worker_process_inner = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_inner, self.__buffer_inner, original_iterable), daemon=True)
+            self.__worker_process_outer = multiprocessing.Process(target=partial(DoubleBufferedIterator._worker_outer, self.__buffer_inner, self.__buffer_outer), daemon=True)
             self.__worker_process_inner.start()
             self.__worker_process_outer.start()
             self.__original_iterable = None
@@ -236,3 +237,58 @@ def shuffled_iterator(input_iterator: Iterator[T], buffer_size: int = 10000, rng
         yield to_yield
 
     yield from buffer
+
+
+def uniform_sample_iterator(input_iterator: Iterator[T], sample_size: int, rng: Optional[random.Random]=None) -> List[T]:
+    """
+    Use reservoir sampling to uniform-sample a (finite) iterator.
+
+    :return: a list of the sampled elements
+    """
+    if rng is None:
+        rng = random
+
+    # Ensure that this is an iterator that can be consumed exactly once.
+    input_iterator = iter(input_iterator)
+
+    buffer = list(islice(input_iterator, sample_size))  # type: List[T]
+
+    for i, element in enumerate(input_iterator, start=sample_size+1):
+        j = rng.randrange(i)
+        if j < sample_size:
+            buffer[j] = element
+
+    return buffer
+
+
+def subsample_iterator(
+        input_iter: Iterator[T],
+        sampling_rate: float,
+        num_elements: Optional[int]=None,
+        rng: Optional[random.Random]=None
+) -> Iterator[T]:
+    """
+    Stream-sample an input iterator with some sampling rate. This wrapper simply iterates `input_iter` and subsamples its
+        elements until `num_elements` have been returned or the iterator has been exhausted.
+
+    :param input_iter: the original iterator
+    :param sampling_rate: the sampling rate in (0,1].
+    :param num_elements: the number of elements to yield.
+    :param rng:
+    :return:
+    """
+    if rng is None:
+        rng = random
+
+    if sampling_rate == 1.0 and num_elements is not None:
+        yield from islice(input_iter, num_elements)
+    elif sampling_rate == 1.0:
+        yield from input_iter
+    else:
+        num_taken = 0
+        for element in input_iter:
+            if rng.random() < sampling_rate:
+                yield element
+                num_taken += 1
+                if num_elements is not None and num_taken >= num_elements:
+                    break
