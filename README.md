@@ -48,16 +48,6 @@ is provided at the docstring of each class.
 See also [here](#approximate-duplicate-code-detection) for a command line tool.
 * [`treesitter.parser_for`](python/dpu_utils/codeutils/treesitter/parser.py) get [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) parser by language name.
 
-##### TensorFlow 1.x Utilities `dpu_utils.tfutils`
-* [`get_activation`](python/dpu_utils/tfutils/activation.py) retrieve activations function by name.
-* [`GradRatioLoggingOptimizer`](python/dpu_utils/tfutils/gradratiologgingoptimizer.py) a wrapper around optimizers that logs the ratios of grad norms to parameter norms.
-* [`TFVariableSaver`](python/dpu_utils/tfutils/tfvariablesaver.py) save TF variables in an object that can be pickled.
-
-Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](https://www.tensorflow.org/api_docs/python/tf/math/unsorted_segment_sum) operations:
-* [`unsorted_segment_logsumexp`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-* [`unsorted_segment_log_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-* [`unsorted_segment_softmax`](python/dpu_utils/tfutils/unsortedsegmentops.py)
-
 ##### TensorFlow 2.x Utilities `dpu_utils.tf2utils`
 * [`get_activation_function_by_name`](python/dpu_utils/tf2utils/activation.py) retrieve activation functions by name.
 * [`gelu`](python/dpu_utils/tf2utils/activation.py) The GeLU activation function.
@@ -67,18 +57,6 @@ Unsorted segment operations following TensorFlow's [`unsorted_segment_sum`](http
 * [`unsorted_segment_logsumexp`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
 * [`unsorted_segment_log_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
 * [`unsorted_segment_softmax`](python/dpu_utils/tf2utils/unsorted_segment_ops.py)
-
-
-##### TensorFlow Models `dpu_utils.tfmodels`
-* [`SparseGGNN`](python/dpu_utils/tfmodels/sparsegnn.py) a sparse GGNN implementation.
-* [`AsyncGGNN`](python/dpu_utils/tfmodels/asyncgnn.py) an asynchronous GGNN implementation.
-
-These models have not been tested with TF 2.0.
-
-##### PyTorch Utilities `dpu_utils.ptutils`
-* [`BaseComponent`](python/dpu_utils/ptutils/basecomponent.py) a wrapper abstract class around `nn.Module` that 
-   takes care of essential elements of most neural network components.
-* [`ComponentTrainer`](python/dpu_utils/ptutils/basecomponent.py) a training loop for `BaseComponent`s.
 
 
 ### Command-line tools
