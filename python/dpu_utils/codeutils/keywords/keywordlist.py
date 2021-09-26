@@ -39,7 +39,6 @@ def get_language_keywords(language: str) -> FrozenSet[str]:
     elif language in _LANGUAGE_TO_FILENAME:
         name = _LANGUAGE_TO_FILENAME[language]
         with open(os.path.join(os.path.dirname(__file__), name)) as f:
-            pass
-        return frozenset(l.strip() for l in f if len(l.strip()) > 0)
+            return frozenset(l.strip() for l in f if len(l.strip()) > 0)
     else:
         raise Exception('Language keywords `%s` not supported yet. Consider contributing it to dpu-utils.' % language)
