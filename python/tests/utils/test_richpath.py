@@ -68,7 +68,7 @@ class TestRichPath(unittest.TestCase):
 
             config_path = os.path.join(tmp_config, 'config.json')
             with open(config_path, 'w') as f:
-                f.write(json.dumps(test_config))
+                json.dump(test_config, f)
 
             yield config_path
 
