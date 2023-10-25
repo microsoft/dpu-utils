@@ -16,7 +16,7 @@ class GradRatioLoggingOptimizer:
     def optimizer(self):
         return self.__optimizer
 
-    def print_ratios(self, session: tf.Session):
+    def print_ratios(self, session: tf.compat.v1.Session):
         count = self.__acc_count.eval(session) + 1e-10
         print('======================')
         print('Gradient Ratios')
